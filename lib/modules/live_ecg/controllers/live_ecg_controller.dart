@@ -38,6 +38,16 @@ class LiveEcgController extends GetxController {
     patient = Get.arguments as PatientModel;
     engine = EcgEngine(bluetoothService);
     _secondsSub = engine.onSecondTick.listen((s) => elapsedSeconds.value = s);
+
+    // Port of `NewEcgActivity.checkFromLoadData()`'s fresh-recording
+    // branch, which calls `setGain(settings.gain)` — both telling the
+    // device which hardware gain to use for this session (it doesn't
+    // remember this across connections/power cycles) and setting the
+    // chart display scale to match.
+    final storage = StorageService.instance;
+    EcgData.instance.graphScale = double.tryParse(storage.gain) ?? 1;
+    final actualGain = int.tryParse(storage.actualGain);
+    if (actualGain != null) bluetoothService.sendGain(actualGain);
   }
 
   void startRecording() {

@@ -8,8 +8,15 @@ class SettingsController extends GetxController {
   final storage = StorageService.instance;
 
   static const filterOptions = ['No', '0 to 25 Hz', '0 to 40 Hz', '5 to 25 Hz', '5 to 40 Hz', '50 Hz Notch'];
-  static const gainOptions = ['x1', 'x2', 'x4', 'x6', 'x8', 'x12'];
-  static const gainActualValues = [1, 2, 4, 6, 8, 12];
+
+  /// `R.array.spinner_gain` / `spinner_actual_gain` — the original app's
+  /// full 1/2/3/4/6/8/12 gain list is commented out in favor of this
+  /// 3-option one ("20210121: BARC only 3 options for gain to be shown:
+  /// 0.5 -> 3, 1 -> 6, 2 -> 12"), which is what actually ships. gainOptions
+  /// are display labels; gainActualValues (index-matched) are both the
+  /// storage/device-lookup value and the software descale divisor.
+  static const gainOptions = ['0.5', '1', '2'];
+  static const gainActualValues = [3, 6, 12];
 
   final RxString filter = ''.obs;
   final RxString gain = ''.obs;
@@ -21,7 +28,7 @@ class SettingsController extends GetxController {
   void onInit() {
     super.onInit();
     filter.value = filterOptions.contains(storage.filter) ? storage.filter : '0 to 40 Hz';
-    gain.value = gainOptions.contains(storage.gain) ? storage.gain : 'x6';
+    gain.value = gainOptions.contains(storage.gain) ? storage.gain : '1';
     autoSave.value = storage.autoSave;
     autoAssignCardiologist.value = storage.autoAssignCardiologist;
     xAxisScale.value = storage.xAxisScale;

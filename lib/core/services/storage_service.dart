@@ -51,7 +51,7 @@ class StorageService {
   String get filter => _box.read('settings_filter') ?? '0 to 40 Hz';
   set filter(String v) => _box.write('settings_filter', v);
 
-  String get gain => _box.read('settings_gain') ?? 'x6';
+  String get gain => _box.read('settings_gain') ?? '1';
   set gain(String v) => _box.write('settings_gain', v);
 
   String get actualGain => _box.read('settings_actualgain') ?? '6';

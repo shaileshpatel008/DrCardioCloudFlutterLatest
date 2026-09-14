@@ -26,9 +26,18 @@ class EcgData {
   List<double> preIirY = List.filled(noOfChannels, 0);
 
   /// 1 for the original 2-byte-per-channel hardware, 2 for the newer
-  /// 3-byte-per-channel/BLE-capable hardware (`api/upload-pdf`'s implicit
-  /// `val_per_mv` switch in `MainActivity.setVersionSettings()`).
+  /// 3-byte-per-channel hardware — set by `BluetoothService.checkHwVersion()`
+  /// from the device's response right after connecting, matching
+  /// `MainActivity.checkHwVersion()`/`setVersionSettings()`.
   int hwVersion = 1;
+
+  /// ADC-counts-per-millivolt calibration constant (`SupportClass.settings
+  /// .val_per_mv` in the original — "54.61 in data corresponds to 1mV in
+  /// firmware v1"). Used for chart axis scaling, waveform measurement
+  /// (R/P/Q/S/T amplitudes), and PDF/CSV export; derived from [hwVersion]
+  /// rather than stored separately, since the two are never set independently
+  /// in the original either.
+  double get valPerMv => hwVersion == 2 ? 3495 : 54.61;
 
   int rawDataCount = 0;
   int displayDataCount = 0;
