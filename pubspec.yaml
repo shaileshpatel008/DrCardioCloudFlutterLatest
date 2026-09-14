@@ -89,6 +89,16 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
 
+# reactive_ble_mobile (flutter_reactive_ble's native Android impl) hardcodes
+# compileSdkVersion 33 in every release through 5.5.0, which fails
+# checkDebugAarMetadata against modern transitive androidx deps. Vendored
+# locally (third_party/reactive_ble_mobile) with just that line bumped to 35.
+# It's a transitive dependency of flutter_reactive_ble, not a direct one,
+# hence dependency_overrides rather than a direct dependency line.
+dependency_overrides:
+  reactive_ble_mobile:
+    path: third_party/reactive_ble_mobile
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
