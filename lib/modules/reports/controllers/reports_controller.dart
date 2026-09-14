@@ -1,19 +1,24 @@
 import 'package:get/get.dart';
 
 import '../../../data/models/ecg_record_model.dart';
+import '../../../data/models/remote_report_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
 
-/// Port of `LoadDataActivity` / the Reports tab: lists locally-saved
-/// recordings and their sync status (there is no server-side "list my
-/// reports" endpoint in the original app — see `ApiConstants` — so this
-/// reads from the local store only, same as the Java app does).
+/// Port of `ReportActivity` (the Reports tab): its primary list is the
+/// account's server-side report history (`api/ecg-list`), independent of
+/// what's saved on this device — `LoadDataActivity`/"Load Data" is the
+/// separate, local-files-only screen. [records] mirrors this device's own
+/// recordings (for the sync-status filter chips, which have no equivalent
+/// in the original); [cloudRecords] mirrors the original's actual list.
 class ReportsController extends GetxController {
   ReportsController({EcgRepository? repository}) : _repository = repository ?? EcgRepository();
 
   final EcgRepository _repository;
 
   final RxList<EcgRecordModel> records = <EcgRecordModel>[].obs;
+  final RxList<RemoteReportModel> cloudRecords = <RemoteReportModel>[].obs;
   final RxBool isLoading = true.obs;
+  final RxnString cloudError = RxnString();
   final RxString filter = 'All'.obs;
 
   @override
@@ -27,6 +32,16 @@ class ReportsController extends GetxController {
     final all = await _repository.allRecords();
     records.assignAll(all);
     isLoading.value = false;
+
+    // Best-effort: the device may be offline, or the account may have no
+    // cloud history yet — either way local records above still show.
+    cloudError.value = null;
+    try {
+      final remote = await _repository.fetchRemoteReports();
+      cloudRecords.assignAll(remote);
+    } catch (e) {
+      cloudError.value = e.toString();
+    }
   }
 
   List<EcgRecordModel> get filtered {

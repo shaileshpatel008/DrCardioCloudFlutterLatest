@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
 import '../../models/ecg_record_model.dart';
+import '../../models/remote_report_model.dart';
 import 'auth_remote_datasource.dart';
 
 class EcgRemoteDataSource {
@@ -58,5 +59,30 @@ class EcgRemoteDataSource {
     final response = await _dio.get(ApiConstants.authDevice, queryParameters: {'device_id': deviceId});
     final body = response.data is String ? jsonDecode(response.data as String) : response.data;
     return (body['status'] as String?)?.toLowerCase() == 'success';
+  }
+
+  /// GET api/ecg-list — the account's full server-side report history,
+  /// same call `ReportActivity`'s Reports tab makes on every load.
+  Future<List<RemoteReportModel>> fetchEcgList() async {
+    final response = await _dio.get(ApiConstants.ecgList);
+    final body = response.data is String ? jsonDecode(response.data as String) : response.data;
+    if ((body['status'] as String?)?.toLowerCase() != 'success') {
+      throw ApiStatusException(body['error_data']?.toString() ?? 'Could not load reports');
+    }
+    final list = body['success_data'] as List? ?? [];
+    return list.map((e) => RemoteReportModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// POST api/assign-cardiologist — requests cardiologist review for an
+  /// already-uploaded report.
+  Future<void> assignCardiologist(String ecgRecordId) async {
+    final response = await _dio.post(
+      ApiConstants.assignCardiologist,
+      data: FormData.fromMap({'ecg_record_id': ecgRecordId, 'assign_to_cardiologist': 'true'}),
+    );
+    final body = response.data is String ? jsonDecode(response.data as String) : response.data;
+    if ((body['status'] as String?)?.toLowerCase() != 'success') {
+      throw ApiStatusException(body['error_data']?.toString() ?? 'Could not assign cardiologist');
+    }
   }
 }

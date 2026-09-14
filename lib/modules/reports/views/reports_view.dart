@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/models/ecg_record_model.dart';
+import '../../../data/models/remote_report_model.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
+import '../../pdf_viewer/controllers/pdf_viewer_controller.dart';
 import '../controllers/reports_controller.dart';
 
 class ReportsView extends GetView<ReportsController> {
@@ -54,18 +56,86 @@ class ReportsView extends GetView<ReportsController> {
                 return const Center(child: CircularProgressIndicator());
               }
               final items = controller.filtered;
-              if (items.isEmpty) {
-                return const Center(child: Text('No recordings yet.', style: TextStyle(color: AppColors.muted)));
+              final cloud = controller.cloudRecords;
+              if (items.isEmpty && cloud.isEmpty) {
+                return Center(
+                  child: Text(
+                    controller.cloudError.value != null
+                        ? 'No recordings on this device, and could not reach the server:\n${controller.cloudError.value}'
+                        : 'No recordings yet.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.muted),
+                  ),
+                );
               }
-              return ListView.separated(
+              return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) => _ReportTile(record: items[index]),
+                children: [
+                  for (final record in items) ...[
+                    _ReportTile(record: record),
+                    const SizedBox(height: 10),
+                  ],
+                  if (cloud.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text('From your account', style: Theme.of(context).textTheme.titleSmall),
+                    ),
+                    for (final report in cloud) ...[
+                      _CloudReportTile(report: report),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                ],
               );
             }),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CloudReportTile extends StatelessWidget {
+  const _CloudReportTile({required this.report});
+  final RemoteReportModel report;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Get.toNamed(
+          AppRoutes.pdfViewer,
+          arguments: RemotePdfArgs(url: report.documentPath, fileName: '${report.documentName}.pdf'),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
+          child: Row(
+            children: [
+              const Icon(Icons.cloud_outlined, color: AppColors.muted2),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(report.documentName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(
+                      report.isReported
+                          ? (report.assignedToCardiologist ? 'Reported · Assigned' : 'Reported')
+                          : 'Pending review',
+                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
+            ],
+          ),
+        ),
       ),
     );
   }

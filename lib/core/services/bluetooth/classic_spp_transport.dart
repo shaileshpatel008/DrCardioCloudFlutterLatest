@@ -58,9 +58,25 @@ class ClassicSppTransport implements EcgTransport {
   @override
   Future<void> stopScan() => _bt.cancelDiscovery();
 
+  /// Port of `AppBluetoothConnectionThread.run()`'s bonding handling: on
+  /// Android, `createRfcommSocketToServiceRecord().connect()` to an
+  /// *unbonded* device frequently fails outright (no automatic OS pairing
+  /// prompt) rather than pairing on the fly, so the original app checks
+  /// bond state first and explicitly runs the pairing flow
+  /// (`device.createBond()` + wait for `ACTION_BOND_STATE_CHANGED` ==
+  /// `BOND_BONDED`, then retries the connection) before ever opening the
+  /// socket. `bondDeviceAtAddress` is this plugin's equivalent of that
+  /// bond-then-retry dance in one awaitable call.
   @override
   Future<void> connect(EcgDevice device) async {
     await stopScan();
+    final bondState = await _bt.getBondStateForAddress(device.id);
+    if (bondState != BluetoothBondState.bonded) {
+      final bonded = await _bt.bondDeviceAtAddress(device.id);
+      if (bonded != true) {
+        throw StateError('Pairing with ${device.name} failed or was cancelled.');
+      }
+    }
     _connection = await BluetoothConnection.toAddress(device.id);
   }
 

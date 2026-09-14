@@ -4,6 +4,7 @@ import '../../core/services/connectivity_service.dart';
 import '../datasources/local/ecg_local_datasource.dart';
 import '../datasources/remote/ecg_remote_datasource.dart';
 import '../models/ecg_record_model.dart';
+import '../models/remote_report_model.dart';
 
 /// Save-locally-then-sync-opportunistically, matching the original's
 /// `PrefHelper.ECGDataList` queue + `sendOfflineECGDataToServer()`: every
@@ -52,4 +53,11 @@ class EcgRepository {
       await syncOne(record);
     }
   }
+
+  /// The account's full server-side report history (`api/ecg-list`) —
+  /// same call `ReportActivity` makes, independent of what's saved
+  /// locally on this device.
+  Future<List<RemoteReportModel>> fetchRemoteReports() => _remote.fetchEcgList();
+
+  Future<void> assignCardiologist(String ecgRecordId) => _remote.assignCardiologist(ecgRecordId);
 }

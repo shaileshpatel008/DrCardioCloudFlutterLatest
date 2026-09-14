@@ -1,12 +1,7 @@
 /// Real production API contract, read directly out of the Android app's
-/// `PathUtil`, `SignInActivity` and `MainActivity` (Volley requests) so the
-/// Flutter client speaks to the same backend without any server changes.
-///
-/// NOTE: there is no server-side "list my reports" endpoint in the current
-/// app — `api/ecg-list` only appears as a commented-out, never-wired-up URL
-/// in the Java source. Reports/Load Data are read from local device
-/// storage there, and sync is upload-only (PDF+CSV). This port keeps that
-/// behavior rather than inventing a listing endpoint that doesn't exist.
+/// `PathUtil`, `SignInActivity`, `MainActivity` and `ReportActivity`
+/// (Volley requests) so the Flutter client speaks to the same backend
+/// without any server changes.
 class ApiConstants {
   ApiConstants._();
 
@@ -22,4 +17,15 @@ class ApiConstants {
   /// quota (`report_limit_enabled`, `report_limit`) used to gate new
   /// recordings when a plan cap is hit.
   static const String getToken = 'api/get-token';
+
+  /// GET, account-wide server-side report history — `ReportActivity`'s
+  /// primary data source (the Reports tab there never reads local files;
+  /// that's `LoadDataActivity`/"Load Data" instead). Returns
+  /// `{status, success_data: [{document_name, ecg_record_id, status,
+  /// has_assigned_to_cardiologist, document_path}], error_data}`.
+  static const String ecgList = 'api/ecg-list';
+
+  /// POST `{ecg_record_id, assign_to_cardiologist: "true"}` — requests
+  /// cardiologist review for a previously-uploaded report.
+  static const String assignCardiologist = 'api/assign-cardiologist';
 }
