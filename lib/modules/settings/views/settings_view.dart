@@ -66,6 +66,11 @@ class SettingsView extends GetView<SettingsController> {
           const Divider(height: 1),
           _NavRow(icon: Icons.account_circle_outlined, label: 'My Account', onTap: () => Get.toNamed(AppRoutes.myAccount)),
         ]),
+        const SizedBox(height: 18),
+        const _SectionLabel('DIAGNOSTICS'),
+        _Card(children: [
+          _NavRow(icon: Icons.bug_report_outlined, label: 'Share Debug Logs', onTap: controller.shareDebugLogs),
+        ]),
       ],
     );
   }

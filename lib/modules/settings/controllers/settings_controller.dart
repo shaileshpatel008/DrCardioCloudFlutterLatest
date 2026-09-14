@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../core/services/ecg/ecg_filter.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -53,4 +54,6 @@ class SettingsController extends GetxController {
     xAxisScale.value = value;
     storage.xAxisScale = value;
   }
+
+  Future<void> shareDebugLogs() => AppLogger.shareLogFile();
 }

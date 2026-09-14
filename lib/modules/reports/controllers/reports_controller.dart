@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/remote_report_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
@@ -39,7 +40,8 @@ class ReportsController extends GetxController {
     try {
       final remote = await _repository.fetchRemoteReports();
       cloudRecords.assignAll(remote);
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.w('Could not load cloud reports', e, st);
       cloudError.value = e.toString();
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../data/datasources/remote/auth_remote_datasource.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_routes.dart';
@@ -27,9 +28,11 @@ class LoginController extends GetxController {
     try {
       await _repository.login(emailController.text.trim(), passwordController.text);
       Get.offAllNamed(AppRoutes.home);
-    } on ApiStatusException catch (e) {
+    } on ApiStatusException catch (e, st) {
+      AppLogger.w('Login rejected by server', e, st);
       errorMessage.value = e.message;
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e('Login failed', e, st);
       errorMessage.value = 'Could not sign in. Check your connection and try again.';
     } finally {
       isLoading.value = false;

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/bluetooth/ecg_transport.dart';
 
@@ -24,34 +25,52 @@ class DeviceScanController extends GetxController {
   }
 
   Future<void> startScan() async {
+    // Defensive: if this fires twice (e.g. GetX re-running onInit) without
+    // cleaning up first, the underlying plugin's discovery stream can only
+    // be listened to once at a time and throws a bare "Bad state" with no
+    // context of its own — stop any scan already in flight first.
+    await stopScan();
+
     error.value = null;
     devices.clear();
 
-    if (Platform.isAndroid) {
-      await [Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse].request();
-    } else {
-      await Permission.bluetooth.request();
+    try {
+      if (Platform.isAndroid) {
+        await [Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse].request();
+      } else {
+        await Permission.bluetooth.request();
+      }
+
+      final paired = await bluetoothService.pairedDevices();
+      devices.addAll(paired);
+
+      isScanning.value = true;
+      _scanSub = bluetoothService.scan().listen(
+        (device) {
+          if (!devices.any((d) => d.id == device.id)) devices.add(device);
+        },
+        onDone: () => isScanning.value = false,
+        onError: (Object e, StackTrace st) {
+          AppLogger.e('Device scan stream error', e, st);
+          isScanning.value = false;
+          error.value = e.toString();
+        },
+      );
+    } catch (e, st) {
+      AppLogger.e('Failed to start device scan', e, st);
+      isScanning.value = false;
+      error.value = e.toString();
     }
-
-    final paired = await bluetoothService.pairedDevices();
-    devices.addAll(paired);
-
-    isScanning.value = true;
-    _scanSub = bluetoothService.scan().listen(
-      (device) {
-        if (!devices.any((d) => d.id == device.id)) devices.add(device);
-      },
-      onDone: () => isScanning.value = false,
-      onError: (e) {
-        isScanning.value = false;
-        error.value = e.toString();
-      },
-    );
   }
 
   Future<void> stopScan() async {
-    await _scanSub?.cancel();
-    await bluetoothService.stopScan();
+    try {
+      await _scanSub?.cancel();
+      _scanSub = null;
+      await bluetoothService.stopScan();
+    } catch (e, st) {
+      AppLogger.w('Error stopping device scan', e, st);
+    }
     isScanning.value = false;
   }
 
@@ -60,7 +79,8 @@ class DeviceScanController extends GetxController {
     try {
       await bluetoothService.connect(device);
       Get.back(result: device);
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.e('Failed to connect to ${device.name} (${device.id})', e, st);
       Get.snackbar('Could not connect', e.toString());
     } finally {
       connectingId.value = null;

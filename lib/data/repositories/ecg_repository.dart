@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../core/services/app_logger.dart';
 import '../../core/services/connectivity_service.dart';
 import '../datasources/local/ecg_local_datasource.dart';
 import '../datasources/remote/ecg_remote_datasource.dart';
@@ -35,7 +36,8 @@ class EcgRepository {
       await _remote.uploadReport(record: record, autoAssignCardiologist: autoAssignCardiologist);
       await _local.updateSyncStatus(record.id, SyncStatus.synced);
       return true;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e('Failed to upload report ${record.id}', e, st);
       await _local.updateSyncStatus(record.id, SyncStatus.failed);
       return false;
     }

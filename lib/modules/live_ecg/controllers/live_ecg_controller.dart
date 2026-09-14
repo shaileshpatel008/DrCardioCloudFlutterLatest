@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/csv_export_service.dart';
 import '../../../core/services/ecg/ecg_data.dart';
@@ -100,7 +101,8 @@ class LiveEcgController extends GetxController {
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.reduced, timeLimit: Duration(seconds: 5)),
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.w('Could not get location for recording', e, st);
       return null;
     }
   }

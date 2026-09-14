@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 
+import '../app_logger.dart';
 import 'ble_transport.dart';
 import 'bt_frame_parser.dart';
 import 'bt_protocol.dart';
@@ -65,10 +66,14 @@ class BluetoothService extends GetxService {
       _inputSub = _active!.input.listen(
         (bytes) => frameParser.addBytes(bytes),
         onDone: () => state.value = BtConnectionState.disconnected,
-        onError: (_) => state.value = BtConnectionState.disconnected,
+        onError: (Object e, StackTrace st) {
+          AppLogger.e('Bluetooth input stream error for ${device.name}', e, st);
+          state.value = BtConnectionState.disconnected;
+        },
       );
       state.value = BtConnectionState.connected;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.e('Failed to connect to ${device.name} (${device.transport})', e, st);
       state.value = BtConnectionState.disconnected;
       rethrow;
     }
