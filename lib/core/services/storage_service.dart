@@ -93,4 +93,28 @@ class StorageService {
     await _box.remove('UserEmail');
     await _box.remove('Token');
   }
+
+  /// Persists the whole session atomically-enough-in-practice and, unlike
+  /// the plain setters above (which fire-and-forget `_box.write`, a `set`
+  /// can't return the Future), actually awaits every disk flush. Without
+  /// this, a login immediately followed by the app being killed (exactly
+  /// what testing "does login survive a restart" looks like) can lose the
+  /// write if the process dies before GetStorage's queued flush runs.
+  Future<void> writeSession({
+    required bool isUserLoggedIn,
+    required int userId,
+    required String userName,
+    required String userEmail,
+    required String token,
+    required bool reportLimitEnabled,
+    required int reportLimit,
+  }) async {
+    await _box.write('isUserLoggedIn', isUserLoggedIn);
+    await _box.write('UserID', userId);
+    await _box.write('UserName', userName);
+    await _box.write('UserEmail', userEmail);
+    await _box.write('Token', token);
+    await _box.write('reportLimitEnabled', reportLimitEnabled);
+    await _box.write('reportLimit', reportLimit);
+  }
 }
