@@ -6,8 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// App-wide logging sink. Every `catch` block that used to swallow its
-/// error silently now routes through here instead, and [installGlobalHandlers]
-/// wires this in as the destination for anything that isn't caught at all
+/// error silently now routes through here instead, and `main.dart` wires
+/// this in as the destination for anything that isn't caught at all
 /// (Flutter framework errors, uncaught async/zone errors). Output goes both
 /// to the console (visible via `flutter run` / `adb logcat`) and to a
 /// plain-text file on disk, so a log survives after the console scrollback
@@ -46,15 +46,25 @@ class AppLogger {
     );
   }
 
-  static void d(String message) => (_logger?.d(message)) ?? _fallback('D', message);
+  static void d(String message) {
+    final logger = _logger;
+    logger == null ? _fallback('D', message) : logger.d(message);
+  }
 
-  static void i(String message) => (_logger?.i(message)) ?? _fallback('I', message);
+  static void i(String message) {
+    final logger = _logger;
+    logger == null ? _fallback('I', message) : logger.i(message);
+  }
 
-  static void w(String message, [Object? error, StackTrace? stackTrace]) =>
-      (_logger?.w(message, error: error, stackTrace: stackTrace)) ?? _fallback('W', message, error, stackTrace);
+  static void w(String message, [Object? error, StackTrace? stackTrace]) {
+    final logger = _logger;
+    logger == null ? _fallback('W', message, error, stackTrace) : logger.w(message, error: error, stackTrace: stackTrace);
+  }
 
-  static void e(String message, [Object? error, StackTrace? stackTrace]) =>
-      (_logger?.e(message, error: error, stackTrace: stackTrace)) ?? _fallback('E', message, error, stackTrace);
+  static void e(String message, [Object? error, StackTrace? stackTrace]) {
+    final logger = _logger;
+    logger == null ? _fallback('E', message, error, stackTrace) : logger.e(message, error: error, stackTrace: stackTrace);
+  }
 
   /// Only hit if something logs before [init] has run.
   static void _fallback(String level, String message, [Object? error, StackTrace? stackTrace]) {
