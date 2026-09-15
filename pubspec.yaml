@@ -67,6 +67,11 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.2
 
+  # Native PDF rendering for the in-app viewer (smooth pinch-to-zoom,
+  # scales to fit) — printing's PdfPreview is a print-preview widget, not
+  # built for this; pdfx renders through the platform's own PDF engine.
+  pdfx: ^2.10.0
+
   # Onboarding walkthrough.
   smooth_page_indicator: ^1.2.0+3
 
