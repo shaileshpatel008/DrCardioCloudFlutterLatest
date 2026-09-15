@@ -62,4 +62,9 @@ class EcgRepository {
   Future<List<RemoteReportModel>> fetchRemoteReports() => _remote.fetchEcgList();
 
   Future<void> assignCardiologist(String ecgRecordId) => _remote.assignCardiologist(ecgRecordId);
+
+  /// Re-validates a device (by its Bluetooth name) against the signed-in
+  /// account — throws with the server's rejection message if it isn't
+  /// registered to this account.
+  Future<void> authDevice(String deviceId) => _remote.authDevice(deviceId);
 }

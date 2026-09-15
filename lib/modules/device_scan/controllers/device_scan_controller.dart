@@ -7,10 +7,17 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/bluetooth/ecg_transport.dart';
+import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../data/datasources/remote/auth_remote_datasource.dart';
+import '../../../data/repositories/ecg_repository.dart';
 
 class DeviceScanController extends GetxController {
+  DeviceScanController({EcgRepository? repository}) : _repository = repository ?? EcgRepository();
+
   final BluetoothService bluetoothService = Get.find<BluetoothService>();
+  final EcgRepository _repository;
 
   final RxList<EcgDevice> devices = <EcgDevice>[].obs;
   final RxBool isScanning = false.obs;
@@ -79,13 +86,38 @@ class DeviceScanController extends GetxController {
     connectingId.value = device.id;
     try {
       await bluetoothService.connect(device);
+      await _validateWithServer(device);
       Get.back(result: device);
     } catch (e, st) {
       AppLogger.e('Failed to connect to ${device.name} (${device.id})', e, st);
       AppToast.error(e.toString(), title: 'Could not connect');
+      await bluetoothService.disconnect();
     } finally {
       connectingId.value = null;
     }
+  }
+
+  /// Port of `MainActivity.connectedToDevice()`'s device-validation branch:
+  /// reconnecting to the *same* device already validated last time skips
+  /// straight through (no need to hit the server every time); connecting
+  /// to a different/new device calls `api/auth-device`, and a rejection
+  /// ("Device is not registered" in the original's AlertDialog) disconnects
+  /// rather than leaving a half-trusted session.
+  Future<void> _validateWithServer(EcgDevice device) async {
+    final storage = StorageService.instance;
+    if (storage.savedDeviceName == device.name) return;
+
+    final connectivity = Get.find<ConnectivityService>();
+    if (!connectivity.isOnline.value) {
+      throw StateError('Connect to the internet to use this device for the first time.');
+    }
+
+    try {
+      await _repository.authDevice(device.name);
+    } on ApiStatusException catch (e) {
+      throw StateError(e.message);
+    }
+    storage.savedDeviceName = device.name;
   }
 
   @override

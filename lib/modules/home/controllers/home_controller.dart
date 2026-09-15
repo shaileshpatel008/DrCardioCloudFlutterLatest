@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 
 import '../../../core/services/bluetooth/bluetooth_service.dart';
-import '../../../core/services/bluetooth/ecg_transport.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/repositories/ecg_repository.dart';
@@ -38,12 +37,10 @@ class HomeController extends GetxController {
     pendingSyncCount.value = pending.length;
   }
 
-  Future<void> connectDevice() async {
-    final result = await Get.toNamed(AppRoutes.deviceScan);
-    if (result is EcgDevice) {
-      storage.savedDeviceName = result.name;
-    }
-  }
+  // DeviceScanController.connect() already handles connecting, server
+  // validation, and updating storage.savedDeviceName on success — this
+  // just opens that screen.
+  Future<void> connectDevice() => Get.toNamed(AppRoutes.deviceScan);
 
   void startNewEcg() {
     if (bluetoothService.state.value != BtConnectionState.connected) {
