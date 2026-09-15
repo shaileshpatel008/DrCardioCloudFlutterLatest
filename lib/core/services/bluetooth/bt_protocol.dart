@@ -52,14 +52,15 @@ class BtProtocol {
     12: 0x48,
   };
 
-  /// BLE (iOS + Android alternate transport) service/characteristic UUIDs.
-  /// PLACEHOLDER — the device's real BLE GATT profile wasn't available to
-  /// read in this session; ask the firmware/hardware team for the actual
-  /// service UUID and Rx/Tx characteristic UUIDs and replace these before
-  /// shipping an iOS build. Framing (SOR/EOR/ACK bytes) is expected to be
-  /// identical to the SPP transport, just carried over BLE notify/write
-  /// instead of an RFCOMM byte stream.
-  static const String bleServiceUuid = '0000FFE0-0000-1000-8000-00805F9B34FB';
-  static const String bleRxCharacteristicUuid = '0000FFE1-0000-1000-8000-00805F9B34FB';
-  static const String bleTxCharacteristicUuid = '0000FFE2-0000-1000-8000-00805F9B34FB';
+  /// BLE (GATT) service/characteristic UUIDs, taken from the Android app's
+  /// `appbluetoothmodule/.../BleManager.java`. Framing (SOR/EOR/ACK bytes)
+  /// is identical to the SPP transport — `BleManager` and `NewEcgActivity`
+  /// write/parse the exact same command and packet bytes, just carried over
+  /// BLE GATT notify/write instead of an RFCOMM byte stream. Note the write
+  /// and notify characteristics are the SAME UUID on this device.
+  static const String bleServiceUuid = '12345678-1234-5678-1234-56789abcdef0';
+  static const String bleRxCharacteristicUuid =
+      '12345678-1234-5678-1234-56789abcdef1';
+  static const String bleTxCharacteristicUuid =
+      '12345678-1234-5678-1234-56789abcdef1';
 }

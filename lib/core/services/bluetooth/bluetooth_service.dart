@@ -77,8 +77,12 @@ class BluetoothService extends GetxService {
       dataByteCount = BtProtocol.dataBytesV1;
       frameParser.reset();
       frameParser.dataByteCount = dataByteCount;
+      final isBle = device.transport == TransportType.ble;
       _inputSub = _active!.input.listen(
-        (bytes) => frameParser.addBytes(bytes),
+        // BLE notifications arrive as discrete, already-framed packets (and
+        // often batch several samples ahead of one trailing EOR); classic
+        // SPP is a continuous byte stream fed one byte at a time instead.
+        (bytes) => isBle ? frameParser.addBlePacket(bytes) : frameParser.addBytes(bytes),
         onDone: () => state.value = BtConnectionState.disconnected,
         onError: (Object e, StackTrace st) {
           AppLogger.e('Bluetooth input stream error for ${device.name}', e, st);
@@ -130,7 +134,12 @@ class BluetoothService extends GetxService {
 
   void _maybeSendAck(bool ok) {
     _packetCount++;
-    if (dataByteCount == BtProtocol.dataBytesV1 || _packetCount % 500 == 0) {
+    // BLE always ACKs every packet — ported as-is from `NewEcgActivity`'s
+    // explicit note that throttling BLE ACKs the same way classic SPP does
+    // (every packet for v1, every 500th for v2) was tried and didn't help,
+    // and risks stalling firmware that waits for an ACK before continuing.
+    final isBle = _active?.type == TransportType.ble;
+    if (isBle || dataByteCount == BtProtocol.dataBytesV1 || _packetCount % 500 == 0) {
       _write([ok ? BtProtocol.cmdAck : BtProtocol.cmdErr]);
     }
   }

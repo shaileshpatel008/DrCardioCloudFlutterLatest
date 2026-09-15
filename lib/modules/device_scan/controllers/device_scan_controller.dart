@@ -55,7 +55,17 @@ class DeviceScanController extends GetxController {
       isScanning.value = true;
       _scanSub = bluetoothService.scan().listen(
         (device) {
-          if (!devices.any((d) => d.id == device.id)) devices.add(device);
+          final idx = devices.indexWhere((d) => d.id == device.id);
+          if (idx == -1) {
+            devices.add(device);
+          } else if (devices[idx].transport != TransportType.ble && device.transport == TransportType.ble) {
+            // Prefer the BLE result for the same id: these ECG units are
+            // BLE-only and pairing-free, but classic-SPP discovery often
+            // reports the same MAC first, which would otherwise lock the
+            // row into the classic-SPP (bond-then-connect) path that
+            // always fails pairing for this hardware.
+            devices[idx] = device;
+          }
         },
         onDone: () => isScanning.value = false,
         onError: (Object e, StackTrace st) {
