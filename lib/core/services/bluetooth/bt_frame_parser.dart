@@ -29,6 +29,10 @@ class BtFrameParser {
   final List<int> _dataBuf = [];
   int _resyncCount = 0;
 
+  /// SOR_B packets carry no status bytes of their own; reused across BLE
+  /// notifications the same way `NewEcgActivity.lastStatusBytes` is.
+  List<int> _bleLastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
+
   final StreamController<EcgFramePacket> _packetController = StreamController<EcgFramePacket>.broadcast();
   final StreamController<void> _versionMarkerController = StreamController<void>.broadcast();
 
@@ -100,11 +104,61 @@ class BtFrameParser {
     }
   }
 
+  /// Parses one complete, atomically-delivered BLE GATT notification,
+  /// ported from `NewEcgActivity.processBleData()`. Unlike [addBytes] (a
+  /// continuous classic-SPP byte stream fed one byte at a time), a BLE
+  /// notification already arrives as a discrete, complete frame — and
+  /// since the firmware packs as many samples as fit in the negotiated
+  /// MTU, it often carries several samples back-to-back ahead of a single
+  /// trailing EOR rather than exactly one like classic SPP always does.
+  void addBlePacket(List<int> data) {
+    if (data.isEmpty) return;
+    final packetType = data[0] & 0xff;
+
+    if (packetType == BtProtocol.versionMarker) {
+      _versionMarkerController.add(null);
+      return;
+    }
+
+    final int headerLen;
+    if (packetType == BtProtocol.sorA) {
+      headerLen = 1 + BtProtocol.statusBytes;
+    } else if (packetType == BtProtocol.sorB) {
+      headerLen = 1;
+    } else {
+      return; // Unknown packet type — discarded, same as the Android port.
+    }
+
+    const trailerLen = 1;
+    if (data.length < headerLen + dataByteCount + trailerLen) {
+      return; // Too short to hold even one whole sample — discarded.
+    }
+
+    final List<int> statusBytes;
+    if (packetType == BtProtocol.sorA) {
+      statusBytes = List.unmodifiable(data.sublist(1, 1 + BtProtocol.statusBytes));
+      _bleLastStatusBytes = statusBytes;
+    } else {
+      statusBytes = _bleLastStatusBytes;
+    }
+
+    final sampleCount = (data.length - headerLen - trailerLen) ~/ dataByteCount;
+    final payloadLen = sampleCount * dataByteCount;
+    final eor = data[data.length - 1] & 0xff;
+
+    _packetController.add(EcgFramePacket(
+      isValid: eor == BtProtocol.eor,
+      statusBytes: statusBytes,
+      dataBytes: List.unmodifiable(data.sublist(headerLen, headerLen + payloadLen)),
+    ));
+  }
+
   void reset() {
     _state = _ParserState.waitingForSor;
     _statusBuf.clear();
     _dataBuf.clear();
     _resyncCount = 0;
+    _bleLastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
   }
 
   void dispose() {

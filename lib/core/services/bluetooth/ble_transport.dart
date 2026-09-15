@@ -5,17 +5,13 @@ import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'bt_protocol.dart';
 import 'ecg_transport.dart';
 
-/// BLE (GATT) transport — the iOS connection path, and an Android
-/// alternative, for ECG devices whose firmware also exposes a BLE
-/// service. Built on `flutter_reactive_ble`.
-///
-/// IMPORTANT: [BtProtocol.bleServiceUuid]/[bleRxCharacteristicUuid]/
-/// [bleTxCharacteristicUuid] are placeholders — this codebase has no
-/// existing BLE implementation to read the real UUIDs from (only classic
-/// SPP exists today). Confirm the device's actual GATT profile with the
-/// firmware team and update those constants before relying on this for a
-/// real device; until then, `connect()`/`write()` here will not talk to
-/// real hardware.
+/// BLE (GATT) transport, ported from the Android app's
+/// `appbluetoothmodule/.../BleManager.java`. This is the ONLY transport
+/// these ECG devices actually use — they are not classic-SPP/pairable
+/// devices at all, which is why the classic path always failed pairing
+/// for them. No bonding/pairing step exists anywhere in `BleManager`
+/// (`connectGatt(..., TRANSPORT_LE)` connects directly), and this port
+/// intentionally has none either.
 class BleTransport implements EcgTransport {
   final FlutterReactiveBle _ble = FlutterReactiveBle();
   StreamSubscription<ConnectionStateUpdate>? _connectionSub;
@@ -63,10 +59,29 @@ class BleTransport implements EcgTransport {
   Future<void> connect(EcgDevice device) async {
     _deviceId = device.id;
     final completer = Completer<void>();
-    _connectionSub = _ble.connectToDevice(id: device.id).listen((update) {
+    _connectionSub = _ble
+        .connectToDevice(id: device.id, connectionTimeout: const Duration(seconds: 15))
+        .listen((update) async {
       _state = update.connectionState;
-      if (update.connectionState == DeviceConnectionState.connected && !completer.isCompleted) {
-        completer.complete();
+      if (update.connectionState == DeviceConnectionState.connected) {
+        // Best-effort tuning to match `BleManager.onConnectionStateChange()`
+        // (CONNECTION_PRIORITY_HIGH + MTU 247 right after connecting).
+        // Some OEM stacks/firmware reject or ignore these — that must never
+        // fail the connection itself, hence the swallowed errors.
+        try {
+          await _ble.requestConnectionPriority(
+            deviceId: device.id,
+            priority: ConnectionPriority.highPerformance,
+          );
+        } catch (_) {
+          // Non-fatal — device still works at the default connection interval.
+        }
+        try {
+          await _ble.requestMtu(deviceId: device.id, mtu: 247);
+        } catch (_) {
+          // Non-fatal — falls back to the default (23-byte) MTU.
+        }
+        if (!completer.isCompleted) completer.complete();
       }
       if (update.connectionState == DeviceConnectionState.disconnected && !completer.isCompleted) {
         completer.completeError(StateError('Failed to connect to ${device.name}'));
