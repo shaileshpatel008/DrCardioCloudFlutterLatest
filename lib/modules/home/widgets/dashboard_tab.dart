@@ -4,14 +4,23 @@ import 'package:get/get.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../reports/widgets/report_tile.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/home_controller.dart';
 import 'ripple_pulse.dart';
 
-/// The "New ECG" dashboard tab: device-connection card + primary CTA.
-/// Per the brief — disconnected state reads as visibly disabled with a
-/// pulsing "tap to connect" affordance; connected state is a solid,
-/// highlighted "ready to record" state.
+/// The "New ECG" dashboard tab: device-connection card + primary CTA +
+/// a Recent Reports preview.
+///
+/// Per the approved redesign, the device-status card is now a calm,
+/// neutral white card in BOTH connected and disconnected states — the
+/// bold red gradient used to be spent on connection status too, which
+/// made it and the primary CTA below blend into each other with no
+/// hierarchy. Red is now reserved for the one thing that should draw the
+/// eye: the CTA. The whole status card (not just the icon or the
+/// "Change" chip) is a single tap target through to Device Scan, in both
+/// states — previously the disconnected ripple icon and the connected
+/// "Change device" button were two separate, much smaller targets.
 class DashboardTab extends GetView<HomeController> {
   const DashboardTab({super.key});
 
@@ -54,81 +63,84 @@ class DashboardTab extends GetView<HomeController> {
             ],
           ),
           const SizedBox(height: 20),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              gradient: connected
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.brandRed, AppColors.brandRedDark],
-                    )
-                  : null,
-              color: connected ? null : Colors.white,
-              border: connected ? null : Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (connected) ...[
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(color: Color(0xFF7CFF6B), shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text('DEVICE CONNECTED',
-                          style: TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    controller.bluetoothService.connectedDeviceName.value,
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton.icon(
-                    onPressed: controller.connectDevice,
-                    style: TextButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.white.withValues(alpha: 0.15)),
-                    icon: const Icon(Icons.swap_horiz, size: 16),
-                    label: const Text('Change device'),
-                  ),
-                ] else ...[
-                  Row(
-                    children: [
-                      RipplePulse(
-                        color: AppColors.brandRed,
-                        size: 48,
-                        child: InkWell(
-                          onTap: controller.connectDevice,
-                          borderRadius: BorderRadius.circular(24),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
-                            child: const Icon(Icons.bluetooth, color: Colors.white),
+              onTap: controller.connectDevice,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.border)),
+                child: connected
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('DEVICE CONNECTED',
+                                  style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  controller.bluetoothService.connectedDeviceName.value,
+                                  style: const TextStyle(color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(10)),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.swap_horiz, size: 16, color: AppColors.brandRed),
+                                    const SizedBox(width: 6),
+                                    const Text('Change', style: TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          RipplePulse(
+                            color: AppColors.brandRed,
+                            size: 44,
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
+                              child: const Icon(Icons.bluetooth, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('No device connected', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink)),
+                                SizedBox(height: 2),
+                                Text('Tap to connect your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('No device connected', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                            SizedBox(height: 2),
-                            Text('Tap to connect your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -179,19 +191,54 @@ class DashboardTab extends GetView<HomeController> {
           Obx(() {
             final pending = controller.pendingSyncCount.value;
             if (pending == 0) return const SizedBox.shrink();
-            return Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: AppColors.pendingBg, borderRadius: BorderRadius.circular(14)),
-              child: Row(
-                children: [
-                  const Icon(Icons.cloud_upload_outlined, color: AppColors.pending, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text('$pending recording${pending == 1 ? '' : 's'} waiting to sync',
-                        style: const TextStyle(color: AppColors.pending, fontWeight: FontWeight.w700, fontSize: 13)),
-                  ),
-                ],
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.pendingBg, borderRadius: BorderRadius.circular(14)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.cloud_upload_outlined, color: AppColors.pending, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('$pending recording${pending == 1 ? '' : 's'} waiting to sync',
+                          style: const TextStyle(color: AppColors.pending, fontWeight: FontWeight.w700, fontSize: 13)),
+                    ),
+                  ],
+                ),
               ),
+            );
+          }),
+          Obx(() {
+            final recent = controller.recentRecords;
+            if (recent.isEmpty) return const SizedBox.shrink();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('RECENT REPORTS',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
+                    TextButton(
+                      onPressed: controller.viewAllReports,
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('View All', style: TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                          Icon(Icons.chevron_right, color: AppColors.brandRed, size: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                for (final record in recent) ...[
+                  ReportTile(record: record),
+                  const SizedBox(height: 10),
+                ],
+              ],
             );
           }),
         ],

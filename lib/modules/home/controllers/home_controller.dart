@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_toast.dart';
+import '../../../data/models/ecg_record_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
 import '../../../routes/app_routes.dart';
 
@@ -21,12 +22,18 @@ class HomeController extends GetxController {
   final RxInt tabIndex = 0.obs;
   final RxInt pendingSyncCount = 0.obs;
 
+  /// Newest 5 recordings for the dashboard's "Recent Reports" section —
+  /// the full list lives on the Reports tab, reached via "View All".
+  static const _recentLimit = 5;
+  final RxList<EcgRecordModel> recentRecords = <EcgRecordModel>[].obs;
+
   BtConnectionState get connectionState => bluetoothService.state.value;
 
   @override
   void onInit() {
     super.onInit();
     _refreshPendingCount();
+    _refreshRecentRecords();
     ever(bluetoothService.state, (_) {});
   }
 
@@ -36,6 +43,17 @@ class HomeController extends GetxController {
     final pending = await _ecgRepository.pendingUploads();
     pendingSyncCount.value = pending.length;
   }
+
+  Future<void> _refreshRecentRecords() async {
+    // Already newest-first (EcgLocalDataSource.all() orders by date_time
+    // DESC) — just take the top few.
+    final all = await _ecgRepository.allRecords();
+    recentRecords.assignAll(all.take(_recentLimit));
+  }
+
+  /// "View All" on the dashboard's Recent Reports section — Reports is a
+  /// bottom-nav tab, not a separate route, so this just switches tabs.
+  void viewAllReports() => changeTab(1);
 
   // DeviceScanController.connect() already handles connecting, server
   // validation, and updating storage.savedDeviceName on success — this
