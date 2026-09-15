@@ -80,24 +80,96 @@ class PdfViewerView extends GetView<PdfViewerController> {
           );
         }
 
-        return PdfViewPinch(
+        return _DoubleTapToZoom(
           controller: controller.pdfController.value!,
-          padding: 16,
-          minScale: 1,
-          maxScale: 5,
-          // Left at pdfx's default (a near-white page with a soft drop
-          // shadow) — that's what actually makes a single page read as a
-          // centered, floating "card" against the dark scaffold behind it.
-          builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-            options: const DefaultBuilderOptions(),
-            documentLoaderBuilder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            pageLoaderBuilder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
-            errorBuilder: (_, error) => Center(
-              child: Text('$error', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+          child: PdfViewPinch(
+            controller: controller.pdfController.value!,
+            padding: 16,
+            minScale: 1,
+            maxScale: 5,
+            // Left at pdfx's default (a near-white page with a soft drop
+            // shadow) — that's what actually makes a single page read as a
+            // centered, floating "card" against the dark scaffold behind it.
+            builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+              options: const DefaultBuilderOptions(),
+              documentLoaderBuilder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+              pageLoaderBuilder: (_) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+              errorBuilder: (_, error) => Center(
+                child: Text('$error', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+              ),
             ),
           ),
         );
       }),
+    );
+  }
+}
+
+/// Adds double-tap-to-zoom on top of [PdfViewPinch]'s pinch/pan, matching
+/// the original Android app's `PDFView.enableDoubletap(true)` (pinch alone
+/// was never the only zoom gesture there). `PdfControllerPinch` IS the
+/// `TransformationController` `PdfViewPinch` renders from, so driving it
+/// externally — animated, so it doesn't just snap — moves the same view
+/// pinch would. A double-tap and a pinch/pan use distinct gesture
+/// recognizers, so both coexist on the same child without either stealing
+/// the other's gestures.
+class _DoubleTapToZoom extends StatefulWidget {
+  const _DoubleTapToZoom({required this.controller, required this.child});
+  final PdfControllerPinch controller;
+  final Widget child;
+
+  @override
+  State<_DoubleTapToZoom> createState() => _DoubleTapToZoomState();
+}
+
+class _DoubleTapToZoomState extends State<_DoubleTapToZoom> with SingleTickerProviderStateMixin {
+  static const _zoomScale = 2.5;
+
+  late final AnimationController _animController;
+  Animation<Matrix4>? _zoomAnimation;
+  TapDownDetails? _doubleTapDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220))
+      ..addListener(() {
+        final anim = _zoomAnimation;
+        if (anim != null) widget.controller.value = anim.value;
+      });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _handleDoubleTap() {
+    final begin = widget.controller.value;
+    final Matrix4 end;
+    if (begin.getMaxScaleOnAxis() > 1.05) {
+      // Already zoomed in — double-tap zooms back out.
+      end = Matrix4.identity();
+    } else {
+      // Zoom in centered on exactly where the user double-tapped.
+      final position = _doubleTapDetails?.localPosition ?? Offset.zero;
+      end = Matrix4.identity()
+        ..translate(-position.dx * (_zoomScale - 1), -position.dy * (_zoomScale - 1))
+        ..scale(_zoomScale);
+    }
+    _zoomAnimation = Matrix4Tween(begin: begin, end: end).animate(
+      CurveTween(curve: Curves.easeOut).animate(_animController),
+    );
+    _animController.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onDoubleTapDown: (details) => _doubleTapDetails = details,
+      onDoubleTap: _handleDoubleTap,
+      child: widget.child,
     );
   }
 }
