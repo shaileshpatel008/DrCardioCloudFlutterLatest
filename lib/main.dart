@@ -53,7 +53,11 @@ class DrCardioApp extends StatelessWidget {
       title: 'Dr. Cardio',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: AppRoutes.login,
+      // Do NOT hardcode this to a specific screen (login/home/etc.) — the
+      // splash route runs SplashController's session/onboarding check and
+      // sends the user to the right place. Hardcoding here skips that
+      // check entirely, e.g. showing login even when already logged in.
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
     );
   }
