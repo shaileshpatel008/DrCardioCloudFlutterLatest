@@ -10,6 +10,7 @@ import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_engine.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
@@ -89,7 +90,7 @@ class LiveEcgController extends GetxController {
       await _repository.saveLocally(record);
       await _repository.syncPendingQueue();
       Get.offAllNamed(AppRoutes.home);
-      Get.snackbar('Saved', 'Recording saved for ${patient.name}.');
+      AppToast.success('Recording saved for ${patient.name}.');
     } finally {
       isSaving.value = false;
     }

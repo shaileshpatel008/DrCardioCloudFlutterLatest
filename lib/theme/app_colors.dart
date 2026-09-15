@@ -19,6 +19,10 @@ class AppColors {
   static const Color surface = Color(0xFFF7F7F7);
   static const Color card = Color(0xFFFFFFFF);
 
+  /// Flat fill for text fields — a touch darker than [surface] so a
+  /// borderless input still reads as a distinct, tappable field.
+  static const Color surfaceMuted = Color(0xFFF0F0F0);
+
   // Status colors — same hues as the original app's colors.xml
   // (green_active, orange_active, grey_active).
   static const Color success = Color(0xFF2E7D32);
@@ -29,6 +33,14 @@ class AppColors {
   static const Color offlineBg = Color(0xFFFAFAFA);
   static const Color error = brandRed;
   static const Color errorBg = Color(0xFFFDECEA);
+
+  // Toast/status-message colors (AppToast) — deliberately distinct from
+  // the report sync-status colors above (which map to specific existing
+  // meanings): success=green, error=red, warning=orange, info=blue.
+  static const Color toastSuccess = Color(0xFF2E7D32);
+  static const Color toastError = Color(0xFFC62828);
+  static const Color toastWarning = Color(0xFFEF6C00);
+  static const Color toastInfo = Color(0xFF1565C0);
 
   // ECG monitor panel — black background, yellow trace, matching the
   // original MPAndroidChart configuration exactly

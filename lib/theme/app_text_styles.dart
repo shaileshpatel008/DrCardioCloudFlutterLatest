@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Deliberately the platform default font (system-ui on iOS/Android),
-/// same as the original app which never set a custom typeface — this
-/// keeps the app fully functional offline from first launch with no
-/// runtime font download. `fontFeatures: tabularFigures` is used on
-/// [mono] for the elapsed-time readout / lead labels so digits don't
-/// jitter in width without needing a separate monospace font asset.
+/// Nunito (Google Fonts), bundled as a local asset and set as the app's
+/// default `fontFamily` in [AppTheme] — see `pubspec.yaml`'s `fonts:`
+/// entry for why it's bundled rather than fetched at runtime via the
+/// `google_fonts` package (this app needs to work fully offline from
+/// first launch). `fontFeatures: tabularFigures` is used on [mono] for
+/// the elapsed-time readout / lead labels so digits don't jitter in
+/// width without needing a separate monospace font asset.
 class AppTextStyles {
   AppTextStyles._();
 

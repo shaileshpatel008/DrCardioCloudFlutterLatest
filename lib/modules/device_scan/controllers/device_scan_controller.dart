@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/bluetooth/ecg_transport.dart';
+import '../../../core/widgets/app_toast.dart';
 
 class DeviceScanController extends GetxController {
   final BluetoothService bluetoothService = Get.find<BluetoothService>();
@@ -81,7 +82,7 @@ class DeviceScanController extends GetxController {
       Get.back(result: device);
     } catch (e, st) {
       AppLogger.e('Failed to connect to ${device.name} (${device.id})', e, st);
-      Get.snackbar('Could not connect', e.toString());
+      AppToast.error(e.toString(), title: 'Could not connect');
     } finally {
       connectingId.value = null;
     }

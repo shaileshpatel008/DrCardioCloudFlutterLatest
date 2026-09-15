@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../core/services/connectivity_service.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
 
@@ -31,7 +32,7 @@ class OfflineReportsController extends GetxController {
 
   Future<void> retryAll() async {
     if (!connectivity.isOnline.value) {
-      Get.snackbar('Still offline', 'Connect to the internet and try again.');
+      AppToast.warning('Connect to the internet and try again.', title: 'Still offline');
       return;
     }
     isRetrying.value = true;

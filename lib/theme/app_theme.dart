@@ -9,6 +9,7 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'Nunito',
       scaffoldBackgroundColor: AppColors.surface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.brandRed,
@@ -51,21 +52,32 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.card,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        fillColor: AppColors.surfaceMuted,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.brandRed, width: 1.5),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.brandRed, width: 1.8),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.4),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.8),
+        ),
+        labelStyle: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+        floatingLabelStyle: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700),
         hintStyle: const TextStyle(color: AppColors.placeholder),
+        errorStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 12),
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,
