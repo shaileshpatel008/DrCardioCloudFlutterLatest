@@ -19,12 +19,17 @@ class PdfViewerView extends GetView<PdfViewerController> {
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 0,
-        title: Obx(
-          () => Text(
-            controller.fileName,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
+        // Plain Text, not Obx: fileName is a one-time getter derived from
+        // Get.arguments in onInit, never reassigned — wrapping it in Obx
+        // (as the previous version of this screen did) gives GetX's Obx
+        // zero observables to track, which it treats as a hard error
+        // ("improper use of a GetX"), not a no-op. Flutter's default error
+        // widget for that failure is exactly the solid red block reported
+        // here — it was never a rendering/theme glitch.
+        title: Text(
+          controller.fileName,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         actions: [
           Obx(() {
