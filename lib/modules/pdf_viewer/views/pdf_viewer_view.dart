@@ -16,7 +16,16 @@ class PdfViewerView extends GetView<PdfViewerController> {
       backgroundColor: _kBg,
       appBar: AppBar(
         backgroundColor: _kAppBarBg,
-        foregroundColor: Colors.white,
+        // `foregroundColor` alone isn't enough: AppTheme.light's global
+        // appBarTheme sets iconTheme/titleTextStyle explicitly (to
+        // AppColors.ink, `0xFF201F1E` — the exact same hex as _kAppBarBg
+        // above), and an explicit appBarTheme value wins over the
+        // foregroundColor shorthand. Without these two overrides, the
+        // title and action icons render in AppColors.ink on a
+        // AppColors.ink background — perfectly invisible, not missing.
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
         elevation: 0,
         titleSpacing: 0,
         // Plain Text, not Obx: fileName is a one-time getter derived from
@@ -25,12 +34,8 @@ class PdfViewerView extends GetView<PdfViewerController> {
         // zero observables to track, which it treats as a hard error
         // ("improper use of a GetX"), not a no-op. Flutter's default error
         // widget for that failure is exactly the solid red block reported
-        // here — it was never a rendering/theme glitch.
-        title: Text(
-          controller.fileName,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
+        // earlier — it was never a rendering/theme glitch.
+        title: Text(controller.fileName, overflow: TextOverflow.ellipsis),
         actions: [
           Obx(() {
             final pdf = controller.pdfController.value;
