@@ -40,7 +40,9 @@ class HomeController extends GetxController {
   // DeviceScanController.connect() already handles connecting, server
   // validation, and updating storage.savedDeviceName on success — this
   // just opens that screen.
-  Future<void> connectDevice() => Get.toNamed(AppRoutes.deviceScan);
+  Future<void> connectDevice() async {
+    await Get.toNamed(AppRoutes.deviceScan);
+  }
 
   void startNewEcg() {
     if (bluetoothService.state.value != BtConnectionState.connected) {
