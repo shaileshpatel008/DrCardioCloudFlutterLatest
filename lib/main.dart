@@ -53,7 +53,7 @@ class DrCardioApp extends StatelessWidget {
       title: 'Dr. Cardio',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.pages,
     );
   }
