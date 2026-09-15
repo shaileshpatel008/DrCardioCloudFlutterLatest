@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_toast.dart';
 
 class MyProfileController extends GetxController {
   final storage = StorageService.instance;
@@ -24,7 +25,7 @@ class MyProfileController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 300));
     isSaving.value = false;
     Get.back();
-    Get.snackbar('Saved', 'Profile updated.');
+    AppToast.success('Profile updated.');
   }
 
   @override

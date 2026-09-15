@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/bluetooth/ecg_transport.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../data/repositories/ecg_repository.dart';
 import '../../../routes/app_routes.dart';
 
@@ -46,11 +47,7 @@ class HomeController extends GetxController {
 
   void startNewEcg() {
     if (bluetoothService.state.value != BtConnectionState.connected) {
-      Get.snackbar(
-        'Not connected',
-        'Connect to the ECG device first.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      AppToast.warning('Connect to the ECG device first.', title: 'Not connected');
       return;
     }
     Get.toNamed(AppRoutes.patientInfo);
