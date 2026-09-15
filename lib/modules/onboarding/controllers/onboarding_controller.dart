@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/app_assets.dart';
@@ -16,6 +17,16 @@ class OnboardingPage {
 /// of the `AhoyOnboarderActivity` library.
 class OnboardingController extends GetxController {
   final RxInt page = 0.obs;
+
+  /// Owned by the controller (not the view) so it survives view rebuilds —
+  /// a `PageController` created inside `StatelessWidget.build()` is a
+  /// fresh instance on every rebuild while `PageView`'s internal state
+  /// still holds the previous one, which is exactly the kind of mismatch
+  /// that produces bizarre layout corruption (seen here as a ~99000px
+  /// RenderFlex overflow when replaying the walkthrough from Help, which
+  /// navigates here with `Get.toNamed` — pushed on top — rather than the
+  /// first-launch path's `Get.offAllNamed`).
+  final PageController pageController = PageController();
 
   final List<OnboardingPage> pages = const [
     OnboardingPage(
@@ -42,5 +53,11 @@ class OnboardingController extends GetxController {
     StorageService.instance.hasSeenOnboarding = true;
     final loggedIn = StorageService.instance.isUserLoggedIn;
     Get.offAllNamed(loggedIn ? AppRoutes.home : AppRoutes.login);
+  }
+
+  @override
+  void onClose() {
+    pageController.dispose();
+    super.onClose();
   }
 }

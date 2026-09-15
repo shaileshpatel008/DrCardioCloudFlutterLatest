@@ -10,7 +10,7 @@ class OnboardingView extends GetView<OnboardingController> {
 
   @override
   Widget build(BuildContext context) {
-    final pageController = PageController();
+    final pageController = controller.pageController;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -57,17 +57,21 @@ class OnboardingView extends GetView<OnboardingController> {
                 },
               ),
             ),
-            Obx(() => SmoothPageIndicator(
-                  controller: pageController,
-                  count: controller.pages.length,
-                  effect: const ExpandingDotsEffect(
-                    activeDotColor: AppColors.brandRed,
-                    dotColor: AppColors.border,
-                    dotHeight: 8,
-                    dotWidth: 8,
-                  ),
-                  onDotClicked: (i) => pageController.animateToPage(i, duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
-                )),
+            // Plain widget, not Obx — SmoothPageIndicator tracks the
+            // current page via `controller` (the PageController) directly,
+            // it doesn't read any .obs value, so wrapping it in Obx did
+            // nothing but trigger GetX's "improper use of Obx" warning.
+            SmoothPageIndicator(
+              controller: pageController,
+              count: controller.pages.length,
+              effect: const ExpandingDotsEffect(
+                activeDotColor: AppColors.brandRed,
+                dotColor: AppColors.border,
+                dotHeight: 8,
+                dotWidth: 8,
+              ),
+              onDotClicked: (i) => pageController.animateToPage(i, duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
               child: Obx(() {
