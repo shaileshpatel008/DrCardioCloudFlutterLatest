@@ -53,12 +53,18 @@ class EcgRemoteDataSource {
     }
   }
 
-  /// GET api/auth-device?device_id= — re-validates a paired device
-  /// against the signed-in account.
-  Future<bool> authDevice(String deviceId) async {
+  /// GET api/auth-device?device_id= — re-validates a device (identified by
+  /// its Bluetooth name, e.g. "Dr.Cardio/255-96EF" — same value
+  /// `MainActivity.callCheckDeviceApi()` sends, not the MAC address)
+  /// against the signed-in account. Throws with the server's message
+  /// ("Device is not registered", in the original's AlertDialog) on
+  /// rejection, matching `uploadReport`/`fetchEcgList`'s pattern.
+  Future<void> authDevice(String deviceId) async {
     final response = await _dio.get(ApiConstants.authDevice, queryParameters: {'device_id': deviceId});
     final body = response.data is String ? jsonDecode(response.data as String) : response.data;
-    return (body['status'] as String?)?.toLowerCase() == 'success';
+    if ((body['status'] as String?)?.toLowerCase() != 'success') {
+      throw ApiStatusException(body['error_data']?.toString() ?? 'Device is not registered');
+    }
   }
 
   /// GET api/ecg-list — the account's full server-side report history,
