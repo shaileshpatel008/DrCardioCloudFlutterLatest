@@ -52,6 +52,10 @@ class DashboardTab extends GetView<HomeController> {
                   ],
                 ),
               ),
+              if (controller.reportLimitEnabled.value) ...[
+                _EcgLeftBadge(count: controller.reportLimit.value),
+                const SizedBox(width: 10),
+              ],
               CircleAvatar(
                 radius: 20,
                 backgroundColor: AppColors.brandRed,
@@ -209,31 +213,49 @@ class DashboardTab extends GetView<HomeController> {
               ),
             );
           }),
-          Obx(() {
-            final recent = controller.recentRecords;
-            if (recent.isEmpty) return const SizedBox.shrink();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('RECENT REPORTS',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
+              TextButton(
+                onPressed: controller.viewAllReports,
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('RECENT REPORTS',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
-                    TextButton(
-                      onPressed: controller.viewAllReports,
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('View All', style: TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w800)),
-                          Icon(Icons.chevron_right, color: AppColors.brandRed, size: 16),
-                        ],
-                      ),
-                    ),
+                    Text('View All', style: TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                    Icon(Icons.chevron_right, color: AppColors.brandRed, size: 16),
                   ],
                 ),
-                const SizedBox(height: 10),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Obx(() {
+            final recent = controller.recentRecords;
+            if (recent.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Column(
+                  children: [
+                    Icon(Icons.description_outlined, color: AppColors.muted2, size: 28),
+                    SizedBox(height: 10),
+                    Text('No recordings yet.', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    SizedBox(height: 3),
+                    Text('Your saved ECGs will show up here.', style: TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: [
                 for (final record in recent) ...[
                   ReportTile(record: record),
                   const SizedBox(height: 10),
@@ -251,5 +273,39 @@ class DashboardTab extends GetView<HomeController> {
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  }
+}
+
+/// Port of `MainActivity`'s "ECG Left" plan-count badge
+/// (`layout_plan_count`/`bg_plan_count`/`tvCount`/`circle_rect_white_light`):
+/// a small red chip with a "ECG LEFT" label over a white circular count.
+class _EcgLeftBadge extends StatelessWidget {
+  const _EcgLeftBadge({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(color: AppColors.brandRed, borderRadius: BorderRadius.circular(10)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('ECG LEFT', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
+          const SizedBox(height: 3),
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.85),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.4),
+            ),
+            child: Text('$count', style: const TextStyle(color: AppColors.ink, fontSize: 13, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
   }
 }
