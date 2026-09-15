@@ -18,11 +18,14 @@ class SettingsController extends GetxController {
   static const gainOptions = ['0.5', '1', '2'];
   static const gainActualValues = [3, 6, 12];
 
+  static const modeOptions = ['ECG', 'Test'];
+
   final RxString filter = ''.obs;
   final RxString gain = ''.obs;
   final RxBool autoSave = true.obs;
   final RxBool autoAssignCardiologist = false.obs;
   final RxInt xAxisScale = 25.obs;
+  final RxBool testMode = false.obs;
 
   @override
   void onInit() {
@@ -32,6 +35,7 @@ class SettingsController extends GetxController {
     autoSave.value = storage.autoSave;
     autoAssignCardiologist.value = storage.autoAssignCardiologist;
     xAxisScale.value = storage.xAxisScale;
+    testMode.value = storage.testMode;
   }
 
   void setFilter(String value) {
@@ -60,6 +64,15 @@ class SettingsController extends GetxController {
   void setXAxisScale(int value) {
     xAxisScale.value = value;
     storage.xAxisScale = value;
+  }
+
+  /// [value] is the display label ('ECG'/'Test'), not the stored bool —
+  /// matches the pattern of every other dropdown here (setFilter/setGain
+  /// also take the label and translate it).
+  void setMode(String value) {
+    final isTest = value == 'Test';
+    testMode.value = isTest;
+    storage.testMode = isTest;
   }
 
   Future<void> shareDebugLogs() => AppLogger.shareLogFile();

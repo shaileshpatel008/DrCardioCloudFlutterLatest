@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../theme/app_colors.dart';
+import '../../settings/controllers/settings_controller.dart';
 import '../controllers/home_controller.dart';
 import 'ripple_pulse.dart';
 
@@ -19,6 +20,9 @@ class DashboardTab extends GetView<HomeController> {
     return Obx(() {
       final state = controller.bluetoothService.state.value;
       final connected = state == BtConnectionState.connected;
+      // Registered alongside HomeController under the same HomeBinding, so
+      // it's already alive by the time this tab renders.
+      final isTestMode = Get.find<SettingsController>().testMode.value;
 
       return ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -146,16 +150,20 @@ class DashboardTab extends GetView<HomeController> {
                           width: 46,
                           height: 46,
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
-                          child: const Icon(Icons.add, color: Colors.white, size: 24),
+                          child: Icon(isTestMode ? Icons.science_outlined : Icons.add, color: Colors.white, size: 24),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('New ECG Recording', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5)),
-                              SizedBox(height: 2),
-                              Text('12-lead capture · ~90 sec', style: TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              Text(isTestMode ? 'Test ECG Recording' : 'New ECG Recording',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5)),
+                              const SizedBox(height: 2),
+                              Text(
+                                isTestMode ? 'Device calibration waveform · not a patient signal' : '12-lead capture · ~90 sec',
+                                style: const TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w600),
+                              ),
                             ],
                           ),
                         ),

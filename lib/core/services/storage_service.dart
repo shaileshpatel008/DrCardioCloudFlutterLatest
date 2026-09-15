@@ -40,6 +40,14 @@ class StorageService {
   bool get hasSeenOnboarding => _box.read('hasSeenOnboarding') ?? false;
   set hasSeenOnboarding(bool v) => _box.write('hasSeenOnboarding', v);
 
+  /// Port of `settings.test_mode` ("ECG"/"Test" mode toggle on the
+  /// Settings screen). Test mode tells the device to output its built-in
+  /// fixed calibration waveform (`CMD_TEST_START`) instead of real
+  /// acquisition (`CMD_START`) — same wire protocol, same chart pipeline,
+  /// just a known-good signal instead of a patient's.
+  bool get testMode => _box.read('settings_test_mode') ?? false;
+  set testMode(bool v) => _box.write('settings_test_mode', v);
+
   // --- Report-limit / plan quota (from api/get-token) ---
   bool get reportLimitEnabled => _box.read('reportLimitEnabled') ?? false;
   set reportLimitEnabled(bool v) => _box.write('reportLimitEnabled', v);

@@ -36,6 +36,15 @@ class LiveEcgView extends GetView<LiveEcgController> {
                       ],
                     ),
                   ),
+                  if (controller.isTestMode) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(color: AppColors.brandRed.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(999)),
+                      child: const Text('TEST MODE',
+                          style: TextStyle(color: AppColors.brandRed, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Obx(() => Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(color: AppColors.monitorTrace.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(999)),
@@ -54,6 +63,11 @@ class LiveEcgView extends GetView<LiveEcgController> {
             ValueListenableBuilder<List<bool>>(
               valueListenable: controller.leadStatus,
               builder: (context, status, _) {
+                // Port of `DataHandlerThread.SHOW_LEAD_STATUS &&
+                // test_mode==false`: a fixed calibration waveform has no
+                // real electrodes to report on, so lead-off warnings are
+                // meaningless (and would just be noise) in Test Mode.
+                if (controller.isTestMode) return const SizedBox.shrink();
                 final off = <String>[];
                 for (var i = 0; i < status.length && i < _leadStatusLabels.length; i++) {
                   if (!status[i]) off.add(_leadStatusLabels[i]);

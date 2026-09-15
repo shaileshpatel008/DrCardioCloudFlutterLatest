@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
@@ -33,6 +34,13 @@ class LiveEcgController extends GetxController {
   ValueNotifier<int> get revision => engine.revision;
   ValueNotifier<List<bool>> get leadStatus => EcgData.instance.leadStatus;
 
+  /// Port of `settings.test_mode`: true acquires the device's built-in
+  /// fixed calibration waveform (`CMD_TEST_START`) instead of the
+  /// patient's real signal (`CMD_START`) — read once per screen the same
+  /// way gain/filter are, since switching it mid-recording isn't a
+  /// supported flow in the original either.
+  late final bool isTestMode;
+
   @override
   void onInit() {
     super.onInit();
@@ -40,22 +48,48 @@ class LiveEcgController extends GetxController {
     engine = EcgEngine(bluetoothService);
     _secondsSub = engine.onSecondTick.listen((s) => elapsedSeconds.value = s);
 
+    final storage = StorageService.instance;
+    isTestMode = storage.testMode;
+
     // Port of `NewEcgActivity.checkFromLoadData()`'s fresh-recording
     // branch, which calls `setGain(settings.gain)` — both telling the
     // device which hardware gain to use for this session (it doesn't
     // remember this across connections/power cycles) and setting the
     // chart display scale to match.
-    final storage = StorageService.instance;
     EcgData.instance.graphScale = double.tryParse(storage.gain) ?? 1;
     final actualGain = int.tryParse(storage.actualGain);
     if (actualGain != null) bluetoothService.sendGain(actualGain);
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    // Port of `NewEcgActivity.showTestModePopup()` — a one-time, must-
+    // acknowledge notice so a fixed calibration waveform is never mistaken
+    // for a patient's real ECG.
+    if (isTestMode) {
+      Get.dialog(
+        AlertDialog(
+          title: const Text('Test Mode'),
+          content: const Text(
+            "This device is set to Test Mode. The waveform shown is the device's built-in fixed "
+            "calibration signal, not a real ECG — switch to ECG Mode in Settings to acquire from a patient.",
+          ),
+          actions: [TextButton(onPressed: Get.back, child: const Text('OK'))],
+        ),
+      );
+    }
   }
 
   void startRecording() {
     EcgData.instance.isReading = true;
     isReading.value = true;
     elapsedSeconds.value = 0;
-    bluetoothService.sendStart();
+    if (isTestMode) {
+      bluetoothService.sendTestStart();
+    } else {
+      bluetoothService.sendStart();
+    }
   }
 
   void stopRecording() {

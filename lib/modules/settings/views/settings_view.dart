@@ -15,6 +15,26 @@ class SettingsView extends GetView<SettingsController> {
       children: [
         Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 18),
+        const _SectionLabel('ACQUISITION MODE'),
+        _Card(children: [
+          Obx(() => _DropdownRow(
+                icon: Icons.science_outlined,
+                label: 'Mode',
+                value: controller.testMode.value ? 'Test' : 'ECG',
+                options: SettingsController.modeOptions,
+                onChanged: controller.setMode,
+              )),
+        ]),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+          child: Obx(() => Text(
+                controller.testMode.value
+                    ? 'Test mode acquires the device\'s built-in fixed calibration waveform instead of a patient\'s ECG — use it to verify the device and app, not for diagnosis.'
+                    : 'ECG mode acquires live signal from the patient through the connected device.',
+                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
+              )),
+        ),
+        const SizedBox(height: 18),
         const _SectionLabel('SIGNAL PROCESSING'),
         _Card(children: [
           Obx(() => _DropdownRow(
