@@ -9,11 +9,15 @@ import '../../../theme/app_colors.dart';
 /// Shows only the most recent [visibleSamples] points, matching the
 /// original's `setVisibleXRange`/`moveViewToX` scrolling window.
 class EcgLeadChart extends StatelessWidget {
-  const EcgLeadChart({super.key, required this.leadIndex, required this.visibleSamples, this.height = 64, this.showLabel = true});
+  const EcgLeadChart({super.key, required this.leadIndex, required this.visibleSamples, this.height, this.showLabel = true});
 
   final int leadIndex;
   final int visibleSamples;
-  final double height;
+
+  /// Fixed height (used for the small grid layout); leave null to fill
+  /// whatever height the parent already constrains, e.g. an [Expanded]
+  /// row in a full-height single-column stack.
+  final double? height;
   final bool showLabel;
 
   @override
@@ -21,6 +25,7 @@ class EcgLeadChart extends StatelessWidget {
     final samples = EcgData.instance.chartData[leadIndex];
     return Container(
       height: height,
+      width: double.infinity,
       decoration: BoxDecoration(color: AppColors.monitorBg, borderRadius: BorderRadius.circular(10)),
       child: Stack(
         children: [

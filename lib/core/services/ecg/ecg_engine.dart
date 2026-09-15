@@ -7,6 +7,7 @@ import '../bluetooth/bt_frame_parser.dart';
 import '../storage_service.dart';
 import 'ecg_data.dart';
 import 'ecg_filter.dart';
+import 'heart_rate_estimator.dart';
 import 'parse_data.dart';
 
 /// Port of `SupportClass.DataHandlerThread`: turns parsed frames into 12
@@ -37,6 +38,10 @@ class EcgEngine {
   DateTime _lastStopAttempt = DateTime.now();
 
   final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  final HeartRateEstimator _heartRate = HeartRateEstimator();
+  ValueNotifier<int?> get heartRateBpm => _heartRate.bpm;
+  void resetHeartRate() => _heartRate.reset();
 
   final StreamController<int> _secondTickController = StreamController<int>.broadcast();
   Stream<int> get onSecondTick => _secondTickController.stream;
@@ -117,6 +122,10 @@ class EcgEngine {
     ecg.filteredData[x][ch] = EcgFilter.filter(ch, x, ecg.dcCorrectedData[x][ch]);
     final hpfVal = EcgFilter.highPassFilter(ch, x, ecg.filteredData[x][ch]);
 
+    // Lead II (chi == 1, see EcgData.leadName) is the standard rhythm
+    // lead — same one the (currently hidden) rhythm strip shows.
+    if (chi == 1) _heartRate.addSample(x, hpfVal);
+
     if (ecg.rawDataCount % ecg.downSamplingRate == 0) {
       final scaledValue = ecg.graphScale * hpfVal;
       ecg.chartData[chi].add(scaledValue);
@@ -127,5 +136,6 @@ class EcgEngine {
     _sub.cancel();
     _secondTickController.close();
     revision.dispose();
+    _heartRate.dispose();
   }
 }
