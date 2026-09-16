@@ -113,13 +113,25 @@ class DeviceScanController extends GetxController {
   /// to a different/new device calls `api/auth-device`, and a rejection
   /// ("Device is not registered" in the original's AlertDialog) disconnects
   /// rather than leaving a half-trusted session.
+  ///
+  /// Offline + a device never validated before is let through instead of
+  /// blocked — an earlier version threw here and forced a disconnect,
+  /// which made a brand-new device completely unusable with no signal at
+  /// all. `EcgRepository.revalidateConnectedDevice` (wired to
+  /// `ConnectivityService.onReconnect` in `main.dart`) retries this
+  /// automatically the moment connectivity returns; a rejection then
+  /// disconnects, same as a rejection here would.
   Future<void> _validateWithServer(EcgDevice device) async {
     final storage = StorageService.instance;
     if (storage.savedDeviceName == device.name) return;
 
     final connectivity = Get.find<ConnectivityService>();
     if (!connectivity.isOnline.value) {
-      throw StateError('Connect to the internet to use this device for the first time.');
+      AppToast.info(
+        'This device will be verified with your account once you\'re back online.',
+        title: 'Using offline for now',
+      );
+      return;
     }
 
     try {

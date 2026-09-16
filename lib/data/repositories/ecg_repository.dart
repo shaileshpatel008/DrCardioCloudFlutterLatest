@@ -1,9 +1,12 @@
 import 'package:get/get.dart';
 
 import '../../core/services/app_logger.dart';
+import '../../core/services/bluetooth/bluetooth_service.dart';
 import '../../core/services/connectivity_service.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/widgets/app_toast.dart';
 import '../datasources/local/ecg_local_datasource.dart';
+import '../datasources/remote/auth_remote_datasource.dart';
 import '../datasources/remote/ecg_remote_datasource.dart';
 import '../models/ecg_record_model.dart';
 import '../models/remote_report_model.dart';
@@ -76,4 +79,29 @@ class EcgRepository {
   /// account — throws with the server's rejection message if it isn't
   /// registered to this account.
   Future<void> authDevice(String deviceId) => _remote.authDevice(deviceId);
+
+  /// A device connected for the first time while offline is let through
+  /// unvalidated (see `DeviceScanController._validateWithServer`) so a
+  /// brand-new device isn't unusable just because there's no signal at
+  /// that exact moment — this is the other half: retries validation once
+  /// connectivity is back (wired via `ConnectivityService.onReconnect` in
+  /// `main.dart`, same as the pending-uploads queue is drained then too).
+  /// A rejection now means the account genuinely doesn't own this device,
+  /// so it disconnects — same outcome as a rejection at connect time.
+  Future<void> revalidateConnectedDevice(BluetoothService bluetoothService) async {
+    if (bluetoothService.state.value != BtConnectionState.connected) return;
+    final storage = StorageService.instance;
+    final name = bluetoothService.connectedDeviceName.value;
+    if (name.isEmpty || storage.savedDeviceName == name) return;
+
+    try {
+      await authDevice(name);
+      storage.savedDeviceName = name;
+    } on ApiStatusException catch (e) {
+      AppToast.error(e.message, title: 'Device not registered');
+      await bluetoothService.disconnect();
+    } catch (e, st) {
+      AppLogger.w('Could not re-validate device $name after reconnect', e, st);
+    }
+  }
 }

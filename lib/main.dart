@@ -34,12 +34,17 @@ Future<void> main() async {
 
       await StorageService.instance.init();
       final connectivity = await Get.putAsync(() => ConnectivityService().init(), permanent: true);
+      final bluetoothService = Get.put(BluetoothService(), permanent: true);
       // Port of `MainActivity`'s `NetworkLiveData` observer: drain the
       // pending-upload queue as soon as connectivity returns, instead of
       // only syncing at the moment a new recording is saved or when the
       // user manually retries from the Offline Reports screen.
       connectivity.onReconnect(() => EcgRepository().syncPendingQueue());
-      Get.put(BluetoothService(), permanent: true);
+      // A device connected for the first time while offline is used
+      // unvalidated for that session (see
+      // DeviceScanController._validateWithServer) — this retries
+      // validation with the server as soon as connectivity is back.
+      connectivity.onReconnect(() => EcgRepository().revalidateConnectedDevice(bluetoothService));
 
       runApp(const DrCardioApp());
     },
