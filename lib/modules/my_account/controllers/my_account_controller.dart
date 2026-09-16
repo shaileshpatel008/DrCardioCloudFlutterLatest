@@ -7,11 +7,12 @@ import '../../../core/services/storage_service.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../routes/app_routes.dart';
 
-/// Port of `MyAccountsActivity` — Profile / Load Data / Manage Offline
-/// Reports / Settings / Help / Feedback / Rate / Share / Sign out, same
-/// menu items as `activity_my_accounts.xml`'s `llProfile`, `llLoadData`,
-/// `llOfflineData`, `llSettings`, `llHelp`, `llFeedback`, `llReview`,
-/// `llShareApp`, `llSignout`.
+/// Port of `MyAccountsActivity` — Help / Feedback / Rate / Share / Sign
+/// out, same items as `activity_my_accounts.xml`'s `llHelp`, `llFeedback`,
+/// `llReview`, `llShareApp`, `llSignout`. Profile / Load Data / Manage
+/// Offline Reports / Settings are deliberately not repeated here — they
+/// already live one level up, in Settings' own ACCOUNT section (which
+/// also links back to this screen).
 class MyAccountController extends GetxController {
   MyAccountController({AuthRepository? authRepository}) : _authRepository = authRepository ?? AuthRepository();
 
@@ -26,10 +27,6 @@ class MyAccountController extends GetxController {
     PackageInfo.fromPlatform().then((info) => appVersion.value = 'v${info.version} (${info.buildNumber})');
   }
 
-  void openProfile() => Get.toNamed(AppRoutes.myProfile);
-  void openLoadData() => Get.toNamed(AppRoutes.loadData);
-  void openOfflineReports() => Get.toNamed(AppRoutes.offlineReports);
-  void openSettings() => Get.toNamed(AppRoutes.settings);
   void openHelp() => Get.toNamed(AppRoutes.help);
 
   Future<void> sendFeedback() async {
