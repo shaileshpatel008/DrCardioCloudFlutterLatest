@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import 'core/services/app_logger.dart';
@@ -18,6 +19,22 @@ Future<void> main() async {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
       await AppLogger.init();
+
+      // App-wide default: transparent status bar with dark icons, matching
+      // the light background every screen has except the red AppBar ones
+      // (which override this via AppBarTheme.systemOverlayStyle) and the
+      // dark Live ECG/PDF viewer screens (which set their own). Without
+      // this, a screen with no AppBar and no explicit override — e.g. the
+      // Settings tab — just showed whatever Android's un-styled default
+      // is: an opaque black bar that clashed with the light content below
+      // it instead of blending into it.
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ));
 
       // Framework errors (widget build/layout/paint exceptions) — without
       // this override they only print to the console, not the log file.

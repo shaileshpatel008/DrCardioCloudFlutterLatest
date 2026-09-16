@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/app_assets.dart';
@@ -17,7 +18,16 @@ class SplashView extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // No AppBar on this screen to carry its own status-bar style, so set
+    // it explicitly rather than relying on whatever the previous screen
+    // (or the app-wide startup default) happened to leave behind.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
       backgroundColor: const Color(0xFFFCFAF9),
       // Positioned.fill makes the glow a positioned child, so it plays no
       // part in sizing the Stack. That leaves Center as the Stack's only
@@ -75,6 +85,7 @@ class SplashView extends GetView<SplashController> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

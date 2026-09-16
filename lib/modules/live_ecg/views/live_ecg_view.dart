@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/ecg/ecg_data.dart';
@@ -21,7 +22,12 @@ class LiveEcgView extends GetView<LiveEcgController> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // This screen has no AppBar to carry its own status-bar style, so
+      // without this it would inherit the app-wide default of dark icons —
+      // invisible against this screen's near-black background.
+      value: SystemUiOverlayStyle.light,
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
@@ -189,6 +195,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
             ),
           ],
         ),
+      ),
       ),
       ),
     );

@@ -24,7 +24,18 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    // Explicit, not relying on the app-wide default set once at startup:
+    // none of the 4 tabs has its own AppBar, so without this the status
+    // bar style would just carry over — leaking, say, the red AppBar
+    // screens' white icons here after visiting one and coming back, which
+    // then read as invisible against this light-background shell.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
@@ -68,6 +79,7 @@ class HomeView extends GetView<HomeController> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
