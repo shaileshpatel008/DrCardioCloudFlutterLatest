@@ -19,28 +19,22 @@ class SplashView extends GetView<SplashController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF9),
-      // SizedBox.expand forces the Stack itself to be exactly screen-sized
-      // (fixing the "Stack shrink-wraps to its content" issue) while
-      // leaving its children on the default loose fit, so the Column
-      // below still sizes to its own content and Alignment.center can
-      // actually center it — `StackFit.expand` was the wrong tool for
-      // that: it force-stretches every non-positioned child (including
-      // the Column) to fill the full stack, and a stretched Column with
-      // no `mainAxisAlignment` set just left its content sitting at the
-      // top of that now-full-height box instead of centered within it.
-      body: SizedBox.expand(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-          Container(
-            width: 340,
-            height: 340,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [Color(0x29C53827), Color(0x00C53827)]),
+      // Positioned.fill makes the glow a positioned child, so it plays no
+      // part in sizing the Stack. That leaves Center as the Stack's only
+      // non-positioned child, and Center under bounded incoming
+      // constraints always grows to fill them and then centers its own
+      // child within that full space — no reliance on SizedBox.expand or
+      // StackFit.expand (both of which force-stretch every non-positioned
+      // child, which is what left the Column pinned to the top before).
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: Center(
+              child: _GlowCircle(),
             ),
           ),
-          Column(
+          Center(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
@@ -77,10 +71,26 @@ class SplashView extends GetView<SplashController> {
                 height: 26,
                 child: CircularProgressIndicator(strokeWidth: 2.6, color: AppColors.brandRed, backgroundColor: AppColors.border),
               ),
-            ],
+              ],
+            ),
           ),
-          ],
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowCircle extends StatelessWidget {
+  const _GlowCircle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 340,
+      height: 340,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [Color(0x29C53827), Color(0x00C53827)]),
       ),
     );
   }
