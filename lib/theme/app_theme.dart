@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_text_styles.dart';
@@ -26,11 +27,14 @@ class AppTheme {
         labelLarge: AppTextStyles.button,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: AppColors.surface,
+        backgroundColor: AppColors.brandRed,
+        surfaceTintColor: AppColors.brandRed,
+        foregroundColor: Colors.white,
         elevation: 0,
-        titleTextStyle: AppTextStyles.h3,
-        iconTheme: const IconThemeData(color: AppColors.ink),
+        titleTextStyle: AppTextStyles.h3.copyWith(color: Colors.white),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
