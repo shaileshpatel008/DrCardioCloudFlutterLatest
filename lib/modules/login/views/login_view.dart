@@ -6,155 +6,166 @@ import '../../../core/constants/app_assets.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/login_controller.dart';
 
-/// Redesign approved as "Option 2 · Soft Glow", matching the splash
-/// screen's language: the previous version was a form floating in a sea
-/// of flat grey with no background treatment, which read as unfinished/
-/// blank. A soft blurred red glow behind the logo and shadowed (rather
-/// than flat-filled) input fields give it the same lift.
+/// Redesign approved as "Option 3 · Bold Minimal": flat white background,
+/// a labeled-field style (small caps label above a plain grey pill) instead
+/// of Option 2's floating shadowed cards, and a full-bleed primary button —
+/// a punchier, more clinical feel than the softer glow version. Carries the
+/// same T&C agreement row and validation as before, restyled to match: a
+/// filled checkbox with an explicit tick instead of a stock Material one.
 class LoginView extends GetView<LoginController> {
   const LoginView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFCFAF9),
-      body: SafeArea(
-        child: Stack(
-          // Same fix as the splash screen: without this, Stack shrink-wraps
-          // to the SingleChildScrollView's content size instead of filling
-          // the screen, leaving the form stuck at the top with empty space
-          // below instead of properly filling/centering in the viewport.
-          fit: StackFit.expand,
-          children: [
-            Positioned(
-              top: 20,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: Container(
-                  width: 320,
-                  height: 320,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [Color(0x24C53827), Color(0x00C53827)]),
-                  ),
-                ),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _EcgWatermark()),
+          Positioned(
+            top: -120,
+            left: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [Color(0x1FC53827), Color(0x00C53827)]),
               ),
             ),
-            Center(
+          ),
+          SafeArea(
+            child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                 child: _AnimatedEntrance(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 40),
-                      Center(
-                        child: Container(
-                          width: 84,
-                          height: 84,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.10), blurRadius: 30, offset: const Offset(0, 12))],
-                          ),
-                          child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      Text('Welcome back', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Sign in to capture and sync 12-lead ECGs',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.muted, fontSize: 13.5, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 32),
-                      Form(
-                        key: controller.formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 30),
+                        Row(
                           children: [
-                            _GlowField(
-                              controller: controller.emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              hintText: 'Email address',
-                              prefixIcon: Icons.mail_outline_rounded,
-                              validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your email' : null,
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(color: AppColors.brandRed, borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.all(11),
+                              child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain, color: Colors.white),
                             ),
-                            const SizedBox(height: 14),
-                            Obx(() => _GlowField(
-                                  controller: controller.passwordController,
-                                  obscureText: controller.obscurePassword.value,
-                                  textInputAction: TextInputAction.done,
-                                  onFieldSubmitted: (_) => controller.login(),
-                                  hintText: 'Password',
-                                  prefixIcon: Icons.lock_outline_rounded,
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      controller.obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                      color: AppColors.muted2,
-                                    ),
-                                    onPressed: controller.toggleObscure,
-                                  ),
-                                  validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
-                                )),
-                            const SizedBox(height: 18),
-                            _AgreementRow(controller: controller),
-                            const SizedBox(height: 22),
-                            Obx(() => AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 200),
-                                  child: FilledButton(
-                                    key: ValueKey(controller.isLoading.value),
-                                    onPressed: controller.isLoading.value ? null : controller.login,
-                                    child: controller.isLoading.value
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
-                                          )
-                                        : const Text('Sign In'),
-                                  ),
-                                )),
+                            const SizedBox(width: 12),
+                            RichText(
+                              text: const TextSpan(
+                                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                                children: [
+                                  TextSpan(text: 'Dr.', style: TextStyle(color: AppColors.ink)),
+                                  TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 26),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.lock_clock_outlined, size: 14, color: AppColors.muted2),
-                          SizedBox(width: 6),
-                          Text(
-                            'Encrypted sync · Works fully offline',
-                            style: TextStyle(color: AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w600),
+                        const SizedBox(height: 40),
+                        Text('Welcome back', style: Theme.of(context).textTheme.headlineMedium),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Sign in to capture and sync 12-lead ECGs',
+                          style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 30),
+                        Form(
+                          key: controller.formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _LabeledField(
+                                label: 'EMAIL ADDRESS',
+                                controller: controller.emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                hintText: 'you@clinic.com',
+                                prefixIcon: Icons.mail_outline_rounded,
+                                validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter your email' : null,
+                              ),
+                              const SizedBox(height: 16),
+                              Obx(() => _LabeledField(
+                                    label: 'PASSWORD',
+                                    controller: controller.passwordController,
+                                    obscureText: controller.obscurePassword.value,
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) => controller.login(),
+                                    hintText: '••••••••',
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        controller.obscurePassword.value ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                        color: AppColors.muted2,
+                                        size: 20,
+                                      ),
+                                      onPressed: controller.toggleObscure,
+                                    ),
+                                    validator: (v) => (v == null || v.isEmpty) ? 'Enter your password' : null,
+                                  )),
+                              const SizedBox(height: 20),
+                              _AgreementRow(controller: controller),
+                              const SizedBox(height: 22),
+                              Obx(() => AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 200),
+                                    child: SizedBox(
+                                      key: ValueKey(controller.isLoading.value),
+                                      width: double.infinity,
+                                      height: 54,
+                                      child: FilledButton(
+                                        onPressed: controller.isLoading.value ? null : controller.login,
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor: AppColors.brandRed,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        ),
+                                        child: controller.isLoading.value
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                                              )
+                                            : const Text('Sign In', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                                      ),
+                                    ),
+                                  )),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                        ),
+                        const SizedBox(height: 22),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.lock_clock_outlined, size: 13, color: AppColors.muted2),
+                            SizedBox(width: 6),
+                            Text(
+                              'Encrypted sync · Works fully offline',
+                              style: TextStyle(color: AppColors.muted2, fontSize: 11, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// A form field styled to sit on the soft-glow background — white fill
-/// with a light drop shadow instead of the flat grey fill the rest of the
-/// app's fields use, since a flat fill would disappear against this
-/// screen's own light background instead of reading as a distinct field.
-class _GlowField extends StatelessWidget {
-  const _GlowField({
+/// Bold Minimal's field style: a small-caps label sitting above a flat grey
+/// pill, rather than Option 2's white shadowed card with an inline hint.
+class _LabeledField extends StatelessWidget {
+  const _LabeledField({
+    required this.label,
     required this.controller,
     required this.hintText,
     required this.prefixIcon,
@@ -166,6 +177,7 @@ class _GlowField extends StatelessWidget {
     this.validator,
   });
 
+  final String label;
   final TextEditingController controller;
   final String hintText;
   final IconData prefixIcon;
@@ -178,29 +190,35 @@ class _GlowField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 3))],
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        onFieldSubmitted: onFieldSubmitted,
-        validator: validator,
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white,
-          hintText: hintText,
-          prefixIcon: Icon(prefixIcon, color: AppColors.muted2),
-          suffixIcon: suffixIcon,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 0.4),
         ),
-      ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.surface,
+            hintText: hintText,
+            hintStyle: const TextStyle(color: AppColors.placeholder, fontSize: 14, fontWeight: FontWeight.w600),
+            prefixIcon: Icon(prefixIcon, color: AppColors.muted2, size: 20),
+            suffixIcon: suffixIcon,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.brandRed, width: 1.4)),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -208,9 +226,9 @@ class _GlowField extends StatelessWidget {
 /// Port of `SignInActivity`'s `checkBoxAgreement`/`textViewAgreement`:
 /// "Privacy Policy" and "Terms and Conditions" are tappable links (same
 /// URLs as the original), and the checkbox must be checked before
-/// `login()` will call the API — an unchecked submit shows both a toast
-/// and this inline error, same information the original's Toast alone
-/// gave, just also visible next to the control that needs it.
+/// `login()` will call the API. Styled here as a filled square with an
+/// explicit tick (matching the approved mockup) rather than the stock
+/// Material checkbox outline used in Option 2.
 class _AgreementRow extends StatelessWidget {
   const _AgreementRow({required this.controller});
   final LoginController controller;
@@ -226,15 +244,21 @@ class _AgreementRow extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: controller.agreedToTerms.value,
-                    onChanged: (v) => controller.setAgreedToTerms(v ?? false),
-                    activeColor: AppColors.brandRed,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
+                GestureDetector(
+                  onTap: () => controller.setAgreedToTerms(!controller.agreedToTerms.value),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 20,
+                    height: 20,
+                    margin: const EdgeInsets.only(top: 1),
+                    decoration: BoxDecoration(
+                      color: controller.agreedToTerms.value ? AppColors.brandRed : Colors.transparent,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: controller.agreedToTerms.value ? AppColors.brandRed : AppColors.muted2, width: 1.6),
+                    ),
+                    child: controller.agreedToTerms.value
+                        ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -267,7 +291,7 @@ class _AgreementRow extends StatelessWidget {
             ),
             if (controller.showAgreementError.value)
               const Padding(
-                padding: EdgeInsets.only(left: 34, top: 4),
+                padding: EdgeInsets.only(left: 30, top: 5),
                 child: Text(
                   'Please agree to continue.',
                   style: TextStyle(color: AppColors.error, fontSize: 11.5, fontWeight: FontWeight.w700),
@@ -300,4 +324,113 @@ class _AnimatedEntrance extends StatelessWidget {
       child: child,
     );
   }
+}
+
+/// Decorative, near-invisible ECG traces behind the form — the "wow" touch
+/// the flat Option 3 background was missing. Two faint waveforms sit in
+/// dead space above and below the card; a soft red glow travels along each
+/// trace on a slow loop, like a heartbeat monitor idling, without ever
+/// competing with the actual form content in front of it.
+class _EcgWatermark extends StatefulWidget {
+  const _EcgWatermark();
+
+  @override
+  State<_EcgWatermark> createState() => _EcgWatermarkState();
+}
+
+class _EcgWatermarkState extends State<_EcgWatermark> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) => CustomPaint(
+          painter: _EcgWatermarkPainter(_controller.value),
+          size: Size.infinite,
+        ),
+      ),
+    );
+  }
+}
+
+class _EcgWatermarkPainter extends CustomPainter {
+  _EcgWatermarkPainter(this.progress);
+  final double progress;
+
+  static Path _tracePath(Size size, double top, double amplitude) {
+    final w = size.width;
+    return Path()
+      ..moveTo(0, top)
+      ..lineTo(w * 0.16, top)
+      ..lineTo(w * 0.21, top)
+      ..lineTo(w * 0.25, top - amplitude * 0.4)
+      ..lineTo(w * 0.29, top + amplitude)
+      ..lineTo(w * 0.33, top - amplitude * 0.55)
+      ..lineTo(w * 0.37, top)
+      ..lineTo(w * 0.44, top)
+      ..lineTo(w * 0.47, top - amplitude * 0.25)
+      ..lineTo(w * 0.5, top + amplitude * 0.35)
+      ..lineTo(w * 0.53, top)
+      ..lineTo(w, top);
+  }
+
+  void _paintTrace(Canvas canvas, Size size, double topFraction, double amplitude, double phaseOffset) {
+    final top = size.height * topFraction;
+    final path = _tracePath(size, top, amplitude);
+
+    final basePaint = Paint()
+      ..color = AppColors.brandRed.withValues(alpha: 0.05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, basePaint);
+
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    final t = (progress + phaseOffset) % 1.0;
+    final pulseCenter = metric.length * t;
+    const trailLength = 40.0;
+    final trailStart = (pulseCenter - trailLength).clamp(0.0, metric.length);
+    if (pulseCenter > trailStart) {
+      final trailPaint = Paint()
+        ..color = AppColors.brandRed.withValues(alpha: 0.22)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      canvas.drawPath(metric.extractPath(trailStart, pulseCenter), trailPaint);
+    }
+    final tangent = metric.getTangentForOffset(pulseCenter);
+    if (tangent != null) {
+      final glowPaint = Paint()
+        ..color = AppColors.brandRed.withValues(alpha: 0.4)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      canvas.drawCircle(tangent.position, 4, glowPaint);
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _paintTrace(canvas, size, 0.24, 26, 0);
+    _paintTrace(canvas, size, 0.74, 20, 0.5);
+  }
+
+  @override
+  bool shouldRepaint(covariant _EcgWatermarkPainter oldDelegate) => oldDelegate.progress != progress;
 }
