@@ -19,15 +19,19 @@ class SplashView extends GetView<SplashController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF9),
-      body: Stack(
-        // Without this, Stack shrink-wraps to its largest non-positioned
-        // child (the 340x340 glow circle) instead of filling the screen,
-        // and Scaffold places that smaller box at the body's top-left —
-        // which is exactly "stuck at the top, not centered" rather than
-        // the centered layout `alignment` alone was supposed to give.
-        fit: StackFit.expand,
-        alignment: Alignment.center,
-        children: [
+      // SizedBox.expand forces the Stack itself to be exactly screen-sized
+      // (fixing the "Stack shrink-wraps to its content" issue) while
+      // leaving its children on the default loose fit, so the Column
+      // below still sizes to its own content and Alignment.center can
+      // actually center it — `StackFit.expand` was the wrong tool for
+      // that: it force-stretches every non-positioned child (including
+      // the Column) to fill the full stack, and a stretched Column with
+      // no `mainAxisAlignment` set just left its content sitting at the
+      // top of that now-full-height box instead of centered within it.
+      body: SizedBox.expand(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
           Container(
             width: 340,
             height: 340,
@@ -75,7 +79,8 @@ class SplashView extends GetView<SplashController> {
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
