@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/pdf_report_service.dart';
+import '../../../core/services/record_file_naming.dart';
 import '../../../data/models/ecg_record_model.dart';
 
 /// Arguments for opening a cloud-only report (`RemoteReportModel`, which
@@ -82,7 +83,11 @@ class PdfViewerController extends GetxController {
     }
   }
 
-  String get fileName => _remote?.fileName ?? '${_record!.patient.name.replaceAll(' ', '_')}_ECG.pdf';
+  // Same name a saved record's file already has on disk/on the server
+  // (see RecordFileNaming) — so the title bar, a share sheet, and the
+  // actual file on device all agree instead of showing three different
+  // names for the same recording.
+  String get fileName => _remote?.fileName ?? '${RecordFileNaming.stem(_record!)}.pdf';
 
   Future<void> share() async {
     final data = bytes.value?.data;

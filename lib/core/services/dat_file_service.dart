@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../../data/models/ecg_record_model.dart';
 import 'dr_cardio_storage.dart';
+import 'record_file_naming.dart';
 
 /// Raw waveform export mirroring the original app's `.dat` file
 /// (`mFile.saveDatFile()` / `readDatFile()`, written to
@@ -28,7 +29,7 @@ class DatFileService {
 
   static Future<File> generate(EcgRecordModel record) async {
     final dir = await DrCardioStorage.dataDir();
-    final file = File(p.join(dir.path, '${record.id}.dat'));
+    final file = File(p.join(dir.path, '${RecordFileNaming.stem(record)}.dat'));
 
     final leadCount = record.leadData.length;
     final sampleCount = record.leadData.fold<int>(0, (m, lead) => lead.length > m ? lead.length : m);

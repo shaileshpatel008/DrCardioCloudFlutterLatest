@@ -160,14 +160,20 @@ class LiveEcgController extends GetxController {
         longitude: position?.longitude.toString() ?? '',
       );
 
-      // All three exports are written to local storage first, unconditionally
-      // — same as the original (`NewEcgActivity.generateReport()` always
-      // writes .dat/.csv/.pdf before ever checking connectivity). Uploading
-      // is a separate, best-effort step below.
+      // All exports are written to local storage first, unconditionally —
+      // same as the original (`NewEcgActivity.generateReport()` always
+      // writes .dat/.csv/.pdf/Filtered-Data before ever checking
+      // connectivity). Uploading is a separate, best-effort step below.
       final pdfFile = await PdfReportService.generate(record);
       final csvFile = await CsvExportService.generate(record);
+      final filteredCsvFile = await CsvExportService.generateFiltered(record);
       final datFile = await DatFileService.generate(record);
-      record = record.copyWith(pdfPath: pdfFile.path, csvPath: csvFile.path, datPath: datFile.path);
+      record = record.copyWith(
+        pdfPath: pdfFile.path,
+        csvPath: csvFile.path,
+        datPath: datFile.path,
+        filteredCsvPath: filteredCsvFile.path,
+      );
 
       await _repository.saveLocally(record);
       await _repository.syncPendingQueue();

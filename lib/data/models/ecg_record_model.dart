@@ -18,6 +18,7 @@ class EcgRecordModel {
     this.pdfPath,
     this.csvPath,
     this.datPath,
+    this.filteredCsvPath,
     this.deviceId = '',
     this.latitude = '',
     this.longitude = '',
@@ -51,6 +52,10 @@ class EcgRecordModel {
   /// records saved before this field existed have none.
   final String? datPath;
 
+  /// "Filtered Data" export path — see `CsvExportService.generateFiltered`.
+  /// Nullable for the same reason as [datPath].
+  final String? filteredCsvPath;
+
   final String deviceId;
   final String latitude;
   final String longitude;
@@ -66,7 +71,13 @@ class EcgRecordModel {
 
   SyncStatus syncStatus;
 
-  EcgRecordModel copyWith({SyncStatus? syncStatus, String? pdfPath, String? csvPath, String? datPath}) {
+  EcgRecordModel copyWith({
+    SyncStatus? syncStatus,
+    String? pdfPath,
+    String? csvPath,
+    String? datPath,
+    String? filteredCsvPath,
+  }) {
     return EcgRecordModel(
       id: id,
       dateTime: dateTime,
@@ -78,6 +89,7 @@ class EcgRecordModel {
       pdfPath: pdfPath ?? this.pdfPath,
       csvPath: csvPath ?? this.csvPath,
       datPath: datPath ?? this.datPath,
+      filteredCsvPath: filteredCsvPath ?? this.filteredCsvPath,
       deviceId: deviceId,
       latitude: latitude,
       longitude: longitude,

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/services/record_file_naming.dart';
 import '../../models/ecg_record_model.dart';
 import '../../models/remote_report_model.dart';
 import 'auth_remote_datasource.dart';
@@ -26,6 +27,12 @@ class EcgRemoteDataSource {
       throw StateError('Record ${record.id} has no generated PDF/CSV to upload.');
     }
 
+    // Port of `NewEcgActivity.java:1001-1005`'s uploaded filename
+    // (`appendFileName + "_" + ecgData.date_time + ".pdf"`) — the server
+    // and any report list surfacing this filename should show the
+    // patient's name and capture time, not this app's internal DB id.
+    final fileStem = RecordFileNaming.stem(record);
+
     final formData = FormData.fromMap({
       'device_id': record.deviceId,
       'latitude': record.latitude,
@@ -42,8 +49,8 @@ class EcgRemoteDataSource {
       'qtc': record.qtc,
       'qt_by_qtc': record.qtByQtc,
       'have_to_assign_cardiologist': autoAssignCardiologist ? 'true' : 'false',
-      'document_path': await MultipartFile.fromFile(record.pdfPath!, filename: '${record.id}.pdf'),
-      'csv_file': await MultipartFile.fromFile(record.csvPath!, filename: '${record.id}.csv'),
+      'document_path': await MultipartFile.fromFile(record.pdfPath!, filename: '$fileStem.pdf'),
+      'csv_file': await MultipartFile.fromFile(record.csvPath!, filename: '$fileStem.csv'),
     });
 
     final response = await _dio.post(ApiConstants.uploadPdf, data: formData);

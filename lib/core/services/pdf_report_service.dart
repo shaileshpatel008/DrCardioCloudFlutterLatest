@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../data/models/ecg_record_model.dart';
 import 'dr_cardio_storage.dart';
 import 'ecg/ecg_data.dart';
+import 'record_file_naming.dart';
 import 'storage_service.dart';
 
 /// A from-scratch redesign of the report layout, replacing
@@ -63,7 +64,7 @@ class PdfReportService {
     );
 
     final dir = await DrCardioStorage.reportsDir();
-    final file = File(p.join(dir.path, '${record.id}.pdf'));
+    final file = File(p.join(dir.path, '${RecordFileNaming.stem(record)}.pdf'));
     await file.writeAsBytes(await doc.save());
     return file;
   }

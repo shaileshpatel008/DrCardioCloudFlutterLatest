@@ -24,7 +24,7 @@ class EcgLocalDataSource {
     final dbPath = p.join(dir.path, 'drcardio.db');
     _db = await openDatabase(
       dbPath,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $_table (
@@ -38,6 +38,7 @@ class EcgLocalDataSource {
             pdf_path TEXT,
             csv_path TEXT,
             dat_path TEXT,
+            filtered_csv_path TEXT,
             device_id TEXT,
             latitude TEXT,
             longitude TEXT,
@@ -50,6 +51,9 @@ class EcgLocalDataSource {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE $_table ADD COLUMN dat_path TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute('ALTER TABLE $_table ADD COLUMN filtered_csv_path TEXT');
         }
       },
     );
@@ -105,6 +109,7 @@ class EcgLocalDataSource {
         'pdf_path': r.pdfPath,
         'csv_path': r.csvPath,
         'dat_path': r.datPath,
+        'filtered_csv_path': r.filteredCsvPath,
         'device_id': r.deviceId,
         'latitude': r.latitude,
         'longitude': r.longitude,
@@ -133,6 +138,7 @@ class EcgLocalDataSource {
       pdfPath: row['pdf_path'] as String?,
       csvPath: row['csv_path'] as String?,
       datPath: row['dat_path'] as String?,
+      filteredCsvPath: row['filtered_csv_path'] as String?,
       deviceId: row['device_id'] as String? ?? '',
       latitude: row['latitude'] as String? ?? '',
       longitude: row['longitude'] as String? ?? '',

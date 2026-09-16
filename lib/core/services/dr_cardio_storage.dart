@@ -4,9 +4,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 /// Resolves the on-device folders a saved recording's files live in —
-/// `Documents/Dr.Cardio/{Data,Reports,csv}` — matching the original app's
-/// `StartupActivity.checkCreateStorageFolders()` (`Dr.cardio/Data` for
-/// `.dat`, `/Reports` for `.pdf`, `/csv` for `.csv`).
+/// `Documents/Dr.cardio/{Data,Reports,csv,Filtered Data}` — matching the
+/// original app's `StartupActivity.checkCreateStorageFolders()`
+/// (`Dr.cardio/Data` for `.dat`, `/Reports` for `.pdf`, `/csv` for
+/// `.csv`, `/Filtered Data` for the filtered+metadata CSV).
 ///
 /// The original wrote to shared/external storage
 /// (`getExternalStoragePublicDirectory`), which needed a runtime storage
@@ -20,7 +21,12 @@ import 'package:path_provider/path_provider.dart';
 class DrCardioStorage {
   DrCardioStorage._();
 
-  static const _root = 'Dr.Cardio';
+  /// Must match `R.string.storage_folder` (`res/values/settings.xml`)
+  /// exactly, lowercase "c" and all — this is the literal folder name the
+  /// live, already-shipped app creates and that the existing user guide
+  /// documents; `mFile.DIR_DR_CARDIO` ("Dr.Cardio", capital C) is unused
+  /// dead code in the original and must NOT be used here.
+  static const _root = 'Dr.cardio';
 
   static Future<Directory> _folder(String name) async {
     final docs = await getApplicationDocumentsDirectory();
@@ -29,12 +35,16 @@ class DrCardioStorage {
     return dir;
   }
 
-  /// Raw waveform `.dat` exports.
+  /// Raw waveform `.dat` exports — `storage_sub_folders[0]`.
   static Future<Directory> dataDir() => _folder('Data');
 
-  /// Generated `.pdf` reports.
+  /// Generated `.pdf` reports — `storage_sub_folders[1]`.
   static Future<Directory> reportsDir() => _folder('Reports');
 
-  /// Per-lead sample `.csv` exports.
+  /// Per-lead sample `.csv` exports — `storage_sub_folders[2]`.
   static Future<Directory> csvDir() => _folder('csv');
+
+  /// Filtered/baseline-corrected `.csv` exports with a metadata header —
+  /// `storage_sub_folders[3]`, port of `mFile.saveCsvFileWithFilter()`.
+  static Future<Directory> filteredDataDir() => _folder('Filtered Data');
 }
