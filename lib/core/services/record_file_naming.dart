@@ -37,4 +37,34 @@ class RecordFileNaming {
     final sanitized = truncated.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     return sanitized.isEmpty ? 'Patient' : sanitized;
   }
+
+  /// The reverse of [stem]: `api/ecg-list`'s `document_name` for a
+  /// server-side-only report is exactly this same
+  /// `<name>_<yyyy-MM-dd>_<HH-mm-ss.SS>` shape (the original writes it
+  /// with the identical construction), so a cloud report can show a
+  /// patient name + timestamp the same way a local one does, instead of a
+  /// raw filename, even though the server never sends patient info
+  /// separately for that list. Falls back to the whole string as the name
+  /// with no timestamp if it doesn't match (a name/date genuinely
+  /// unavailable is better than a wrong guess).
+  static final _stemPattern = RegExp(r'^(.*)_(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})\.(\d{2})$');
+
+  static ParsedFileName parse(String documentName) {
+    final match = _stemPattern.firstMatch(documentName);
+    if (match == null) return ParsedFileName(name: documentName, dateTime: null);
+    try {
+      final dateTime = DateTime.parse(
+        '${match.group(2)} ${match.group(3)}:${match.group(4)}:${match.group(5)}.${match.group(6)}0',
+      );
+      return ParsedFileName(name: match.group(1)!, dateTime: dateTime);
+    } catch (_) {
+      return ParsedFileName(name: documentName, dateTime: null);
+    }
+  }
+}
+
+class ParsedFileName {
+  const ParsedFileName({required this.name, required this.dateTime});
+  final String name;
+  final DateTime? dateTime;
 }

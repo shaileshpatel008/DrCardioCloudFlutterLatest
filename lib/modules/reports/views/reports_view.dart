@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/services/record_file_naming.dart';
 import '../../../data/models/remote_report_model.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
@@ -121,6 +123,13 @@ class _CloudReportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `api/ecg-list` never sends patient/age/sex fields for this
+    // account-wide list (only document_name/status/assign flag) — but
+    // document_name is built with the same "<name>_<timestamp>" shape a
+    // local record's file is, so this recovers a real name + time instead
+    // of showing the raw filename, matching a local ReportTile's look.
+    final parsed = RecordFileNaming.parse(report.documentName);
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -138,23 +147,27 @@ class _CloudReportTile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.cloud_outlined, color: AppColors.muted2),
+                  Container(
+                    width: 52,
+                    height: 34,
+                    decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(9)),
+                    child: const Icon(Icons.cloud_outlined, color: AppColors.brandRed, size: 18),
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(report.documentName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text(parsed.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                         const SizedBox(height: 2),
                         Text(
-                          report.isReported
-                              ? (report.assignedToCardiologist ? 'Reported · Assigned' : 'Reported')
-                              : 'Pending review',
+                          parsed.dateTime != null ? DateFormat('d MMM, h:mm a').format(parsed.dateTime!) : 'From your account',
                           style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                   ),
+                  _CloudStatusBadge(report: report),
                   IconButton(
                     onPressed: onShare,
                     icon: const Icon(Icons.ios_share_rounded, size: 17, color: AppColors.muted),
@@ -162,7 +175,7 @@ class _CloudReportTile extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 6),
                   const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
                 ],
               ),
@@ -171,31 +184,73 @@ class _CloudReportTile extends StatelessWidget {
               // of the "Reported" status above (a report can be Reported and
               // still unassigned) and independent of the Settings
               // "Auto-assign cardiologist" toggle (that only decides what a
-              // NEW recording sends automatically at upload time).
+              // NEW recording sends automatically at upload time). Compact
+              // and right-aligned rather than a full-width bar, so it reads
+              // as a small secondary action, not another primary CTA.
               if (!report.assignedToCardiologist) ...[
-                const SizedBox(height: 10),
-                Obx(() {
-                  final assigning = assigningIds.contains(report.ecgRecordId);
-                  return SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Obx(() {
+                    final assigning = assigningIds.contains(report.ecgRecordId);
+                    return OutlinedButton.icon(
                       onPressed: assigning ? null : onAssign,
                       icon: assigning
                           ? const SizedBox(
-                              width: 14,
-                              height: 14,
+                              width: 12,
+                              height: 12,
                               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandRed),
                             )
-                          : const Icon(Icons.medical_information_outlined, size: 16),
+                          : const Icon(Icons.medical_information_outlined, size: 14),
                       label: Text(assigning ? 'Sending…' : 'Send to Cardiologist'),
-                      style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandRed, side: const BorderSide(color: AppColors.brandRed)),
-                    ),
-                  );
-                }),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.brandRed,
+                        side: const BorderSide(color: AppColors.brandRed, width: 1),
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    );
+                  }),
+                ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CloudStatusBadge extends StatelessWidget {
+  const _CloudStatusBadge({required this.report});
+  final RemoteReportModel report;
+
+  @override
+  Widget build(BuildContext context) {
+    late Color fg, bg;
+    late String label;
+    if (report.isReported && report.assignedToCardiologist) {
+      fg = AppColors.success;
+      bg = AppColors.successBg;
+      label = 'Assigned';
+    } else if (report.isReported) {
+      fg = AppColors.pending;
+      bg = AppColors.pendingBg;
+      label = 'Reported';
+    } else {
+      fg = AppColors.muted2;
+      bg = AppColors.offlineBg;
+      label = 'Pending';
+    }
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+        child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.w700)),
       ),
     );
   }
