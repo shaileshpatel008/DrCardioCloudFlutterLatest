@@ -21,7 +21,14 @@ class LoginView extends GetView<LoginController> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          const Positioned.fill(child: _EcgWatermark()),
+          // Pinned to fixed bands at the very top/bottom edges rather than a
+          // fraction of full screen height — the form is vertically centered,
+          // so its actual position shifts with content/keyboard, and a
+          // fraction-based placement drifted into the logo row and Sign In
+          // button. These bands stay in the corner margins the centered
+          // content leaves clear on every normal phone height.
+          const Positioned(top: 0, left: 0, right: 0, height: 64, child: _EcgWatermark(band: _EcgBand.top)),
+          const Positioned(bottom: 0, left: 0, right: 0, height: 56, child: _EcgWatermark(band: _EcgBand.bottom)),
           Positioned(
             top: -120,
             left: -120,
@@ -50,16 +57,21 @@ class LoginView extends GetView<LoginController> {
                             Container(
                               width: 46,
                               height: 46,
-                              decoration: BoxDecoration(color: AppColors.brandRed, borderRadius: BorderRadius.circular(14)),
-                              padding: const EdgeInsets.all(11),
-                              child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain, color: Colors.white),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: AppColors.brandRed.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 6))],
+                              ),
+                              // Original app icon (its red disc is baked into the
+                              // asset) rather than a re-tinted glyph in a custom
+                              // colored chip — just lifted with a soft shadow.
+                              child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
                             ),
                             const SizedBox(width: 12),
                             RichText(
                               text: const TextSpan(
                                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
                                 children: [
-                                  TextSpan(text: 'Dr.', style: TextStyle(color: AppColors.ink)),
+                                  TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
                                   TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
                                 ],
                               ),
@@ -326,13 +338,17 @@ class _AnimatedEntrance extends StatelessWidget {
   }
 }
 
-/// Decorative, near-invisible ECG traces behind the form — the "wow" touch
-/// the flat Option 3 background was missing. Two faint waveforms sit in
-/// dead space above and below the card; a soft red glow travels along each
-/// trace on a slow loop, like a heartbeat monitor idling, without ever
-/// competing with the actual form content in front of it.
+enum _EcgBand { top, bottom }
+
+/// Decorative, near-invisible ECG trace confined to a fixed-height band
+/// pinned to the top or bottom screen edge — the "wow" touch the flat
+/// Option 3 background was missing, kept strictly out of the form's own
+/// vertical space so it never visually crosses the logo row or the Sign In
+/// button. A soft red glow travels along the trace on a slow loop, like a
+/// heartbeat monitor idling in the margin.
 class _EcgWatermark extends StatefulWidget {
-  const _EcgWatermark();
+  const _EcgWatermark({required this.band});
+  final _EcgBand band;
 
   @override
   State<_EcgWatermark> createState() => _EcgWatermarkState();
@@ -359,7 +375,7 @@ class _EcgWatermarkState extends State<_EcgWatermark> with SingleTickerProviderS
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) => CustomPaint(
-          painter: _EcgWatermarkPainter(_controller.value),
+          painter: _EcgWatermarkPainter(_controller.value, widget.band),
           size: Size.infinite,
         ),
       ),
@@ -368,34 +384,37 @@ class _EcgWatermarkState extends State<_EcgWatermark> with SingleTickerProviderS
 }
 
 class _EcgWatermarkPainter extends CustomPainter {
-  _EcgWatermarkPainter(this.progress);
+  _EcgWatermarkPainter(this.progress, this.band);
   final double progress;
+  final _EcgBand band;
 
-  static Path _tracePath(Size size, double top, double amplitude) {
+  static Path _tracePath(Size size, double mid, double amplitude) {
     final w = size.width;
     return Path()
-      ..moveTo(0, top)
-      ..lineTo(w * 0.16, top)
-      ..lineTo(w * 0.21, top)
-      ..lineTo(w * 0.25, top - amplitude * 0.4)
-      ..lineTo(w * 0.29, top + amplitude)
-      ..lineTo(w * 0.33, top - amplitude * 0.55)
-      ..lineTo(w * 0.37, top)
-      ..lineTo(w * 0.44, top)
-      ..lineTo(w * 0.47, top - amplitude * 0.25)
-      ..lineTo(w * 0.5, top + amplitude * 0.35)
-      ..lineTo(w * 0.53, top)
-      ..lineTo(w, top);
+      ..moveTo(0, mid)
+      ..lineTo(w * 0.16, mid)
+      ..lineTo(w * 0.21, mid)
+      ..lineTo(w * 0.25, mid - amplitude * 0.4)
+      ..lineTo(w * 0.29, mid + amplitude)
+      ..lineTo(w * 0.33, mid - amplitude * 0.55)
+      ..lineTo(w * 0.37, mid)
+      ..lineTo(w * 0.44, mid)
+      ..lineTo(w * 0.47, mid - amplitude * 0.25)
+      ..lineTo(w * 0.5, mid + amplitude * 0.35)
+      ..lineTo(w * 0.53, mid)
+      ..lineTo(w, mid);
   }
 
-  void _paintTrace(Canvas canvas, Size size, double topFraction, double amplitude, double phaseOffset) {
-    final top = size.height * topFraction;
-    final path = _tracePath(size, top, amplitude);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final amplitude = size.height * 0.28;
+    final mid = band == _EcgBand.top ? size.height * 0.68 : size.height * 0.32;
+    final path = _tracePath(size, mid, amplitude);
 
     final basePaint = Paint()
-      ..color = AppColors.brandRed.withValues(alpha: 0.05)
+      ..color = AppColors.brandRed.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
+      ..strokeWidth = 2.6
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(path, basePaint);
@@ -403,15 +422,15 @@ class _EcgWatermarkPainter extends CustomPainter {
     final metrics = path.computeMetrics().toList();
     if (metrics.isEmpty) return;
     final metric = metrics.first;
-    final t = (progress + phaseOffset) % 1.0;
+    final t = band == _EcgBand.bottom ? (progress + 0.5) % 1.0 : progress;
     final pulseCenter = metric.length * t;
-    const trailLength = 40.0;
+    const trailLength = 34.0;
     final trailStart = (pulseCenter - trailLength).clamp(0.0, metric.length);
     if (pulseCenter > trailStart) {
       final trailPaint = Paint()
-        ..color = AppColors.brandRed.withValues(alpha: 0.22)
+        ..color = AppColors.brandRed.withValues(alpha: 0.18)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
+        ..strokeWidth = 2.6
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       canvas.drawPath(metric.extractPath(trailStart, pulseCenter), trailPaint);
@@ -419,18 +438,12 @@ class _EcgWatermarkPainter extends CustomPainter {
     final tangent = metric.getTangentForOffset(pulseCenter);
     if (tangent != null) {
       final glowPaint = Paint()
-        ..color = AppColors.brandRed.withValues(alpha: 0.4)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-      canvas.drawCircle(tangent.position, 4, glowPaint);
+        ..color = AppColors.brandRed.withValues(alpha: 0.3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawCircle(tangent.position, 3, glowPaint);
     }
   }
 
   @override
-  void paint(Canvas canvas, Size size) {
-    _paintTrace(canvas, size, 0.24, 26, 0);
-    _paintTrace(canvas, size, 0.74, 20, 0.5);
-  }
-
-  @override
-  bool shouldRepaint(covariant _EcgWatermarkPainter oldDelegate) => oldDelegate.progress != progress;
+  bool shouldRepaint(covariant _EcgWatermarkPainter oldDelegate) => oldDelegate.progress != progress || oldDelegate.band != band;
 }
