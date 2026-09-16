@@ -41,8 +41,14 @@ class DashboardTab extends GetView<HomeController> {
         children: [
           Row(
             children: [
-              Image.asset(AppAssets.logoMark, width: 34, height: 34),
-              const SizedBox(width: 10),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(13)),
+                alignment: Alignment.center,
+                child: Image.asset(AppAssets.logoMark, width: 24, height: 24),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +84,17 @@ class DashboardTab extends GetView<HomeController> {
               onTap: controller.connectDevice,
               child: Container(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  // Connected reads at a glance from the border color alone
+                  // (green) instead of needing to read the "DEVICE
+                  // CONNECTED" label — background stays plain white either
+                  // way, so it never competes with the red CTA below it.
+                  border: Border.all(color: connected ? AppColors.success : AppColors.border, width: connected ? 1.6 : 1),
+                  boxShadow: connected
+                      ? [BoxShadow(color: AppColors.ink.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))]
+                      : null,
+                ),
                 child: connected
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,8 +313,8 @@ class _EmptyRecentReports extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
@@ -313,9 +329,11 @@ class _EmptyRecentReports extends StatelessWidget {
   }
 }
 
-/// Port of `MainActivity`'s "ECG Left" plan-count badge
-/// (`layout_plan_count`/`bg_plan_count`/`tvCount`/`circle_rect_white_light`):
-/// a small red chip with a "ECG LEFT" label over a white circular count.
+/// Port of `MainActivity`'s "ECG Left" plan-count indicator
+/// (`layout_plan_count`/`tvCount`) — redesigned from a bulky red square
+/// (which read like a warning stamp sitting next to the avatar) into a
+/// slim pill that sits naturally in the header row instead of competing
+/// with it.
 class _EcgLeftBadge extends StatelessWidget {
   const _EcgLeftBadge({required this.count});
   final int count;
@@ -323,24 +341,16 @@ class _EcgLeftBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: AppColors.brandRed, borderRadius: BorderRadius.circular(10)),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(9, 7, 10, 7),
+      decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(999)),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('ECG LEFT', style: TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
-          const SizedBox(height: 3),
-          Container(
-            width: 30,
-            height: 30,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1.4),
-            ),
-            child: Text('$count', style: const TextStyle(color: AppColors.ink, fontSize: 13, fontWeight: FontWeight.w800)),
-          ),
+          const Icon(Icons.monitor_heart_outlined, size: 15, color: AppColors.brandRed),
+          const SizedBox(width: 5),
+          Text('$count', style: const TextStyle(color: AppColors.brandRedDark, fontSize: 13, fontWeight: FontWeight.w800)),
+          const SizedBox(width: 3),
+          Text('LEFT', style: TextStyle(color: AppColors.brandRed.withValues(alpha: 0.75), fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
         ],
       ),
     );
