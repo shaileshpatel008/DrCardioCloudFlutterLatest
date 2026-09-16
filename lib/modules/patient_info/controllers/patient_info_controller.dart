@@ -18,9 +18,13 @@ class PatientInfoController extends GetxController {
   final medicationsController = TextEditingController();
   final commentsController = TextEditingController();
 
-  final RxString sex = 'Male'.obs;
+  /// Only Full name and Gender are mandatory — Patient ID and Age are
+  /// optional. Starts unselected (no default) rather than pre-picking
+  /// "Male", since it's now a required field the clinician must actively
+  /// choose rather than one that could silently go unnoticed.
+  final RxnString gender = RxnString();
 
-  void setSex(String value) => sex.value = value;
+  void setGender(String value) => gender.value = value;
 
   void continueToRecording() {
     if (!formKey.currentState!.validate()) return;
@@ -29,7 +33,7 @@ class PatientInfoController extends GetxController {
       patientId: idController.text.trim(),
       name: nameController.text.trim(),
       age: ageController.text.trim(),
-      sex: sex.value,
+      sex: gender.value!,
       height: heightController.text.trim(),
       weight: weightController.text.trim(),
       bloodPressure: bpController.text.trim(),
