@@ -53,7 +53,7 @@ class DashboardTab extends GetView<HomeController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('GOOD MORNING', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.muted2)),
+                    Text(_greeting(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.muted2)),
                     Text(
                       controller.storage.userName.isEmpty ? 'Clinician' : controller.storage.userName,
                       style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppColors.ink),
@@ -299,6 +299,14 @@ class DashboardTab extends GetView<HomeController> {
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  }
+
+  /// Was hardcoded to "GOOD MORNING" regardless of when the app was opened.
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 17) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
   }
 }
 
