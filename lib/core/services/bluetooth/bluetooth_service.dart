@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../app_logger.dart';
 import '../ecg/ecg_data.dart';
+import '../storage_service.dart';
 import 'ble_transport.dart';
 import 'bt_frame_parser.dart';
 import 'bt_protocol.dart';
@@ -95,6 +96,36 @@ class BluetoothService extends GetxService {
       AppLogger.e('Failed to connect to ${device.name} (${device.transport})', e, st);
       state.value = BtConnectionState.disconnected;
       rethrow;
+    }
+  }
+
+  /// Port of `MainActivity.checkLastConnectedDevice()`/`tryConnectTo()`:
+  /// silently reconnects to whichever device was last successfully
+  /// connected, directly by its stored address — not via a fresh scan,
+  /// since a device already connected (as this one may still be at the
+  /// OS/GATT level even after this app's process was killed and
+  /// restarted) stops advertising and would never show up in one. Called
+  /// once per app session from `HomeController.onInit()`; failures are
+  /// swallowed since this is a best-effort background attempt, not a
+  /// user-initiated action that deserves an error dialog — the device
+  /// card just goes on showing "not connected", same as if this were
+  /// never attempted.
+  Future<void> autoReconnectIfNeeded() async {
+    if (state.value != BtConnectionState.disconnected) return;
+    final storage = StorageService.instance;
+    final address = storage.savedDeviceAddress;
+    if (address.isEmpty) return;
+
+    final device = EcgDevice(
+      id: address,
+      name: storage.savedDeviceName,
+      isBonded: false,
+      transport: storage.savedDeviceTransport == TransportType.classicSpp.name ? TransportType.classicSpp : TransportType.ble,
+    );
+    try {
+      await connect(device);
+    } catch (e, st) {
+      AppLogger.w('Auto-reconnect to ${device.name} ($address) failed', e, st);
     }
   }
 

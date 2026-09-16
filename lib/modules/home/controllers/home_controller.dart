@@ -59,6 +59,12 @@ class HomeController extends GetxController {
     reportLimitEnabled.value = storage.reportLimitEnabled;
     reportLimit.value = storage.reportLimit;
     _refreshReportLimit();
+    // Port of `MainActivity.checkLastConnectedDevice()`, called from Home
+    // the same way it's called from `onCreate()`/app launch — reconnects
+    // to whatever device was last used without sending the user back
+    // through Device Scan for a device that's already connected and
+    // therefore won't show up in a fresh scan.
+    bluetoothService.autoReconnectIfNeeded();
     ever(bluetoothService.state, (_) {});
     ever(connectivity.isOnline, (_) => _refreshRecentRecords());
   }

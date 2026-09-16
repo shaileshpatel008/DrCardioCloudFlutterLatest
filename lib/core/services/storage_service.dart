@@ -34,8 +34,22 @@ class StorageService {
   String get savedDeviceName => _box.read('SavedDeviceName') ?? '';
   set savedDeviceName(String v) => _box.write('SavedDeviceName', v);
 
+  /// The MAC address (classic SPP) or peripheral id (BLE) of the last
+  /// device successfully connected to — port of `settings.saved_address`,
+  /// used the same way `MainActivity.checkLastConnectedDevice()` does: to
+  /// reconnect directly on app launch without a fresh scan (a device
+  /// already connected doesn't advertise, so it wouldn't show up in one
+  /// anyway). Set unconditionally on every successful connection,
+  /// independent of [savedDeviceName] (which only updates once the
+  /// server has actually validated the device).
   String get savedDeviceAddress => _box.read('saved_device_address') ?? '';
   set savedDeviceAddress(String v) => _box.write('saved_device_address', v);
+
+  /// [TransportType.name] for [savedDeviceAddress] — classic-SPP and BLE
+  /// devices reconnect differently, so this has to be remembered
+  /// alongside the address, not assumed.
+  String get savedDeviceTransport => _box.read('saved_device_transport') ?? '';
+  set savedDeviceTransport(String v) => _box.write('saved_device_transport', v);
 
   bool get hasSeenOnboarding => _box.read('hasSeenOnboarding') ?? false;
   set hasSeenOnboarding(bool v) => _box.write('hasSeenOnboarding', v);

@@ -96,6 +96,14 @@ class DeviceScanController extends GetxController {
     connectingId.value = device.id;
     try {
       await bluetoothService.connect(device);
+      // Remembered regardless of validation outcome, so a later app
+      // launch can reconnect directly by address (BluetoothService
+      // .autoReconnectIfNeeded()) instead of sending the user back
+      // through this scan screen for a device that's already connected
+      // and therefore isn't advertising — port of
+      // `MainActivity.checkLastConnectedDevice()`'s `settings.saved_address`.
+      StorageService.instance.savedDeviceAddress = device.id;
+      StorageService.instance.savedDeviceTransport = device.transport.name;
       await _validateWithServer(device);
       Get.back(result: device);
     } catch (e, st) {
