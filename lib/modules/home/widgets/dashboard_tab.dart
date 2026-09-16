@@ -3,7 +3,10 @@ import 'package:get/get.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
+import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
+import '../../pdf_viewer/controllers/pdf_viewer_controller.dart';
+import '../../reports/widgets/cloud_report_tile.dart';
 import '../../reports/widgets/report_tile.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/home_controller.dart';
@@ -233,26 +236,33 @@ class DashboardTab extends GetView<HomeController> {
           ),
           const SizedBox(height: 10),
           Obx(() {
+            // Same exclusive online/offline source as the Reports tab —
+            // online previews the account's server history, offline
+            // previews this device's own saved recordings, never both.
+            if (controller.connectivity.isOnline.value) {
+              final recent = controller.recentCloudRecords;
+              if (recent.isEmpty) {
+                return const _EmptyRecentReports(message: 'No reports found for your account yet.');
+              }
+              return Column(
+                children: [
+                  for (final report in recent) ...[
+                    CloudReportTile(
+                      report: report,
+                      onTap: () => Get.toNamed(
+                        AppRoutes.pdfViewer,
+                        arguments: RemotePdfArgs(url: report.documentPath, fileName: '${report.documentName}.pdf'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              );
+            }
+
             final recent = controller.recentRecords;
             if (recent.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(Icons.description_outlined, color: AppColors.muted2, size: 28),
-                    SizedBox(height: 10),
-                    Text('No recordings yet.', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    SizedBox(height: 3),
-                    Text('Your saved ECGs will show up here.', style: TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              );
+              return const _EmptyRecentReports(message: 'Your saved ECGs will show up here.');
             }
             return Column(
               children: [
@@ -273,6 +283,33 @@ class DashboardTab extends GetView<HomeController> {
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  }
+}
+
+class _EmptyRecentReports extends StatelessWidget {
+  const _EmptyRecentReports({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.description_outlined, color: AppColors.muted2, size: 28),
+          const SizedBox(height: 10),
+          const Text('No recordings yet.', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          const SizedBox(height: 3),
+          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
   }
 }
 

@@ -26,16 +26,17 @@ class RecordFileNaming {
     return '${date}_$time.$hundredths';
   }
 
-  /// Port of `NewEcgActivity.java:1001-1002`'s
-  /// `patient_name.substring(0, 11)` + `replaceAll("[^a-zA-Z0-9]", "_")`.
-  /// (The original's `.dat`/"Filtered Data" writers use a slightly
-  /// different, unsanitized 20-or-11-char rule — this rewrite uses one
-  /// sanitized stem everywhere instead, which avoids a patient name with a
-  /// `/` or other path-breaking character corrupting a file path.)
+  /// The name exactly as entered — no truncation, and no substituting
+  /// underscores for spaces/punctuation (an earlier version of this did
+  /// both, porting `NewEcgActivity.java:1001-1002`'s
+  /// `patient_name.substring(0, 11)` + `replaceAll("[^a-zA-Z0-9]", "_")`
+  /// literally; asked to stop doing that so the file name reads as the
+  /// name that was actually typed). Only a literal `/` is replaced, since
+  /// that would otherwise be read as a path separator.
   static String _sanitize(String patientName) {
-    final truncated = patientName.length > 11 ? patientName.substring(0, 11) : patientName;
-    final sanitized = truncated.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-    return sanitized.isEmpty ? 'Patient' : sanitized;
+    final trimmed = patientName.trim();
+    if (trimmed.isEmpty) return 'Patient';
+    return trimmed.replaceAll('/', '-');
   }
 
   /// The reverse of [stem]: `api/ecg-list`'s `document_name` for a

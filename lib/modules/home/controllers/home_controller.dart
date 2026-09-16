@@ -6,6 +6,7 @@ import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
+import '../../../data/models/remote_report_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../data/repositories/ecg_repository.dart';
 import '../../../routes/app_routes.dart';
@@ -24,14 +25,21 @@ class HomeController extends GetxController {
   final EcgRepository _ecgRepository;
   final AuthRepository _authRepository;
   final storage = StorageService.instance;
+  final connectivity = Get.find<ConnectivityService>();
 
   final RxInt tabIndex = 0.obs;
   final RxInt pendingSyncCount = 0.obs;
 
-  /// Newest 5 recordings for the dashboard's "Recent Reports" section —
-  /// the full list lives on the Reports tab, reached via "View All".
+  /// Newest 5 for the dashboard's "Recent Reports" section — the full
+  /// list lives on the Reports tab, reached via "View All". Same
+  /// exclusive online/offline source switch as `ReportsController`
+  /// (online -> account/server history; offline -> this device's own
+  /// saved recordings), so this preview always matches what "View All"
+  /// would actually show instead of a locals-only preview linking to a
+  /// screen that might currently be showing something else entirely.
   static const _recentLimit = 5;
   final RxList<EcgRecordModel> recentRecords = <EcgRecordModel>[].obs;
+  final RxList<RemoteReportModel> recentCloudRecords = <RemoteReportModel>[].obs;
 
   /// Port of `MainActivity`'s "ECG Left" plan-count badge
   /// (`layout_plan_count`/`tvCount`), seeded from whatever `login()` last
@@ -52,6 +60,7 @@ class HomeController extends GetxController {
     reportLimit.value = storage.reportLimit;
     _refreshReportLimit();
     ever(bluetoothService.state, (_) {});
+    ever(connectivity.isOnline, (_) => _refreshRecentRecords());
   }
 
   void changeTab(int index) => tabIndex.value = index;
@@ -62,10 +71,19 @@ class HomeController extends GetxController {
   }
 
   Future<void> _refreshRecentRecords() async {
-    // Already newest-first (EcgLocalDataSource.all() orders by date_time
-    // DESC) — just take the top few.
-    final all = await _ecgRepository.allRecords();
-    recentRecords.assignAll(all.take(_recentLimit));
+    if (connectivity.isOnline.value) {
+      try {
+        final remote = await _ecgRepository.fetchRemoteReports();
+        recentCloudRecords.assignAll(remote.take(_recentLimit));
+      } catch (e, st) {
+        AppLogger.w('Could not load recent cloud reports for dashboard', e, st);
+      }
+    } else {
+      // Already newest-first (EcgLocalDataSource.all() orders by
+      // date_time DESC) — just take the top few.
+      final all = await _ecgRepository.allRecords();
+      recentRecords.assignAll(all.take(_recentLimit));
+    }
   }
 
   Future<void> _refreshReportLimit() async {
@@ -73,7 +91,7 @@ class HomeController extends GetxController {
     // skip silently when offline rather than showing an error for a
     // background refresh nobody asked for; the seeded value from storage
     // (above) stands until the next successful load.
-    if (!Get.find<ConnectivityService>().isOnline.value) return;
+    if (!connectivity.isOnline.value) return;
     try {
       final user = await _authRepository.refreshToken();
       reportLimitEnabled.value = user.reportLimitEnabled;

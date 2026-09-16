@@ -7,22 +7,27 @@ import 'package:printing/printing.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/app_logger.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/record_file_naming.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/remote_report_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
 
-/// Port of `ReportActivity` (the Reports tab): its primary list is the
-/// account's server-side report history (`api/ecg-list`), independent of
-/// what's saved on this device — `LoadDataActivity`/"Load Data" is the
-/// separate, local-files-only screen. [records] mirrors this device's own
-/// recordings (for the sync-status filter chips, which have no equivalent
-/// in the original); [cloudRecords] mirrors the original's actual list.
+/// Port of `ReportActivity` (the Reports tab). Same exclusive-source
+/// switch as the original's `onResume()`
+/// (`if(PathUtil.INTERNET_STATUS) callGetReportsECGsListApi(); else
+/// load_file_list();`): online shows the account's server-side report
+/// history (`api/ecg-list`); offline shows what's saved on this device
+/// instead — never both, so there's one consistent list at a time rather
+/// than two visually different sections to reconcile. [records] backs the
+/// offline view (plus the sync-status filter chips, which have no
+/// equivalent in the original); [cloudRecords] backs the online view.
 class ReportsController extends GetxController {
   ReportsController({EcgRepository? repository}) : _repository = repository ?? EcgRepository();
 
   final EcgRepository _repository;
+  final connectivity = Get.find<ConnectivityService>();
 
   final RxList<EcgRecordModel> records = <EcgRecordModel>[].obs;
   final RxList<RemoteReportModel> cloudRecords = <RemoteReportModel>[].obs;
@@ -39,24 +44,31 @@ class ReportsController extends GetxController {
   void onInit() {
     super.onInit();
     reload();
+    // The original re-checks connectivity in onResume() (a fresh Activity
+    // visit); this screen instead stays mounted for as long as its bottom-nav
+    // tab does, so a live listener is this app's equivalent of "re-check
+    // when the screen would next become current".
+    ever(connectivity.isOnline, (_) => reload());
   }
 
   Future<void> reload() async {
     isLoading.value = true;
-    final all = await _repository.allRecords();
-    records.assignAll(all);
-    isLoading.value = false;
+    final online = connectivity.isOnline.value;
 
-    // Best-effort: the device may be offline, or the account may have no
-    // cloud history yet — either way local records above still show.
-    cloudError.value = null;
-    try {
-      final remote = await _repository.fetchRemoteReports();
-      cloudRecords.assignAll(remote);
-    } catch (e, st) {
-      AppLogger.w('Could not load cloud reports', e, st);
-      cloudError.value = e.toString();
+    if (online) {
+      cloudError.value = null;
+      try {
+        final remote = await _repository.fetchRemoteReports();
+        cloudRecords.assignAll(remote);
+      } catch (e, st) {
+        AppLogger.w('Could not load cloud reports', e, st);
+        cloudError.value = e.toString();
+      }
+    } else {
+      final all = await _repository.allRecords();
+      records.assignAll(all);
     }
+    isLoading.value = false;
   }
 
   List<EcgRecordModel> get filtered {
