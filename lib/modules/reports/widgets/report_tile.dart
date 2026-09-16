@@ -10,8 +10,14 @@ import '../../../theme/app_colors.dart';
 /// list and Home's "Recent Reports" preview, so both stay visually
 /// identical without duplicating this markup.
 class ReportTile extends StatelessWidget {
-  const ReportTile({super.key, required this.record});
+  const ReportTile({super.key, required this.record, this.onShare});
   final EcgRecordModel record;
+
+  /// Port of `ReportActivity`'s per-report "Share" action
+  /// (`downloadAndSharePDF`) — null hides the share button entirely
+  /// (Home's "Recent Reports" preview keeps the row compact; Reports'
+  /// own list passes a callback).
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +53,16 @@ class ReportTile extends StatelessWidget {
                 ),
               ),
               _StatusBadge(status: record.syncStatus),
+              if (onShare != null) ...[
+                const SizedBox(width: 2),
+                IconButton(
+                  onPressed: onShare,
+                  icon: const Icon(Icons.ios_share_rounded, size: 17, color: AppColors.muted),
+                  tooltip: 'Share',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
               const SizedBox(width: 6),
               const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
             ],

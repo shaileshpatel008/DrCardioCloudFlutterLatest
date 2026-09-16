@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../core/services/app_logger.dart';
 import '../../core/services/connectivity_service.dart';
+import '../../core/services/storage_service.dart';
 import '../datasources/local/ecg_local_datasource.dart';
 import '../datasources/remote/ecg_remote_datasource.dart';
 import '../models/ecg_record_model.dart';
@@ -31,9 +32,17 @@ class EcgRepository {
   /// Uploads one record; on success marks it synced, on failure marks it
   /// failed (so the offline-reports screen can offer a manual retry) —
   /// same outcome branching as the Java `uploadPDF` response handler.
-  Future<bool> syncOne(EcgRecordModel record, {bool autoAssignCardiologist = false}) async {
+  ///
+  /// [autoAssignCardiologist] defaults to whatever Settings' "Auto-assign
+  /// cardiologist" toggle currently is (`settings.auto_assign`, read fresh
+  /// at upload time in the original too) so every call site — a
+  /// just-finished recording, the reconnect-triggered background sync, a
+  /// manual retry from Offline Reports — honors it without each one having
+  /// to know to look it up. Pass it explicitly only to override that.
+  Future<bool> syncOne(EcgRecordModel record, {bool? autoAssignCardiologist}) async {
+    final assignFlag = autoAssignCardiologist ?? StorageService.instance.autoAssignCardiologist;
     try {
-      await _remote.uploadReport(record: record, autoAssignCardiologist: autoAssignCardiologist);
+      await _remote.uploadReport(record: record, autoAssignCardiologist: assignFlag);
       await _local.updateSyncStatus(record.id, SyncStatus.synced);
       return true;
     } catch (e, st) {

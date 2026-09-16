@@ -22,6 +22,16 @@ class ReportsView extends GetView<ReportsController> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
             child: Text('Reports', style: Theme.of(context).textTheme.headlineSmall),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+            child: TextField(
+              onChanged: controller.setSearchQuery,
+              decoration: const InputDecoration(
+                hintText: 'Search by patient name or ID…',
+                prefixIcon: Icon(Icons.search, color: AppColors.muted2),
+              ),
+            ),
+          ),
           SizedBox(
             height: 44,
             child: Obx(() => ListView(
@@ -55,13 +65,16 @@ class ReportsView extends GetView<ReportsController> {
                 return const Center(child: CircularProgressIndicator());
               }
               final items = controller.filtered;
-              final cloud = controller.cloudRecords;
+              final cloud = controller.filteredCloudRecords;
               if (items.isEmpty && cloud.isEmpty) {
+                final searching = controller.searchQuery.value.trim().isNotEmpty;
                 return Center(
                   child: Text(
-                    controller.cloudError.value != null
-                        ? 'No recordings on this device, and could not reach the server:\n${controller.cloudError.value}'
-                        : 'No recordings yet.',
+                    searching
+                        ? 'No reports match your search.'
+                        : controller.cloudError.value != null
+                            ? 'No recordings on this device, and could not reach the server:\n${controller.cloudError.value}'
+                            : 'No recordings yet.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppColors.muted),
                   ),
@@ -71,7 +84,7 @@ class ReportsView extends GetView<ReportsController> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 children: [
                   for (final record in items) ...[
-                    ReportTile(record: record),
+                    ReportTile(record: record, onShare: () => controller.shareLocalRecord(record)),
                     const SizedBox(height: 10),
                   ],
                   if (cloud.isNotEmpty) ...[
@@ -80,7 +93,12 @@ class ReportsView extends GetView<ReportsController> {
                       child: Text('From your account', style: Theme.of(context).textTheme.titleSmall),
                     ),
                     for (final report in cloud) ...[
-                      _CloudReportTile(report: report),
+                      _CloudReportTile(
+                        report: report,
+                        onShare: () => controller.shareRemoteReport(report),
+                        onAssign: () => controller.assignToCardiologist(report.ecgRecordId),
+                        assigningIds: controller.assigningIds,
+                      ),
                       const SizedBox(height: 10),
                     ],
                   ],
@@ -95,8 +113,11 @@ class ReportsView extends GetView<ReportsController> {
 }
 
 class _CloudReportTile extends StatelessWidget {
-  const _CloudReportTile({required this.report});
+  const _CloudReportTile({required this.report, required this.onShare, required this.onAssign, required this.assigningIds});
   final RemoteReportModel report;
+  final VoidCallback onShare;
+  final VoidCallback onAssign;
+  final RxSet<String> assigningIds;
 
   @override
   Widget build(BuildContext context) {
@@ -112,26 +133,66 @@ class _CloudReportTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Icon(Icons.cloud_outlined, color: AppColors.muted2),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(report.documentName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                    const SizedBox(height: 2),
-                    Text(
-                      report.isReported
-                          ? (report.assignedToCardiologist ? 'Reported · Assigned' : 'Reported')
-                          : 'Pending review',
-                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
+              Row(
+                children: [
+                  const Icon(Icons.cloud_outlined, color: AppColors.muted2),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(report.documentName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        const SizedBox(height: 2),
+                        Text(
+                          report.isReported
+                              ? (report.assignedToCardiologist ? 'Reported · Assigned' : 'Reported')
+                              : 'Pending review',
+                          style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    onPressed: onShare,
+                    icon: const Icon(Icons.ios_share_rounded, size: 17, color: AppColors.muted),
+                    tooltip: 'Share',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
+                ],
               ),
-              const Icon(Icons.chevron_right, color: AppColors.muted2, size: 18),
+              // Port of `ItemListViewAdapter`'s `btnAssign`: visible whenever
+              // the server says this report isn't assigned yet, independent
+              // of the "Reported" status above (a report can be Reported and
+              // still unassigned) and independent of the Settings
+              // "Auto-assign cardiologist" toggle (that only decides what a
+              // NEW recording sends automatically at upload time).
+              if (!report.assignedToCardiologist) ...[
+                const SizedBox(height: 10),
+                Obx(() {
+                  final assigning = assigningIds.contains(report.ecgRecordId);
+                  return SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: assigning ? null : onAssign,
+                      icon: assigning
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandRed),
+                            )
+                          : const Icon(Icons.medical_information_outlined, size: 16),
+                      label: Text(assigning ? 'Sending…' : 'Send to Cardiologist'),
+                      style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandRed, side: const BorderSide(color: AppColors.brandRed)),
+                    ),
+                  );
+                }),
+              ],
             ],
           ),
         ),
