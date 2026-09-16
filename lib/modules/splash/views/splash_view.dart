@@ -20,6 +20,12 @@ class SplashView extends GetView<SplashController> {
     return Scaffold(
       backgroundColor: const Color(0xFFFCFAF9),
       body: Stack(
+        // Without this, Stack shrink-wraps to its largest non-positioned
+        // child (the 340x340 glow circle) instead of filling the screen,
+        // and Scaffold places that smaller box at the body's top-left —
+        // which is exactly "stuck at the top, not centered" rather than
+        // the centered layout `alignment` alone was supposed to give.
+        fit: StackFit.expand,
         alignment: Alignment.center,
         children: [
           Container(

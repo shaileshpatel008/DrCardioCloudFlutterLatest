@@ -20,6 +20,11 @@ class LoginView extends GetView<LoginController> {
       backgroundColor: const Color(0xFFFCFAF9),
       body: SafeArea(
         child: Stack(
+          // Same fix as the splash screen: without this, Stack shrink-wraps
+          // to the SingleChildScrollView's content size instead of filling
+          // the screen, leaving the form stuck at the top with empty space
+          // below instead of properly filling/centering in the viewport.
+          fit: StackFit.expand,
           children: [
             Positioned(
               top: 20,
@@ -36,9 +41,10 @@ class LoginView extends GetView<LoginController> {
                 ),
               ),
             ),
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
-              child: _AnimatedEntrance(
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+                child: _AnimatedEntrance(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -133,6 +139,7 @@ class LoginView extends GetView<LoginController> {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
           ],
