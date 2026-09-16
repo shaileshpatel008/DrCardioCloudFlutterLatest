@@ -191,26 +191,46 @@ class _CloudReportTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
+                  // A plain Material/InkWell pill, not OutlinedButton: the
+                  // app's global OutlinedButtonThemeData forces
+                  // minimumSize: Size.fromHeight(52) (full-width, 52 tall)
+                  // for the primary "Sign out"/form buttons elsewhere, and
+                  // that theme silently won over a per-call minimumSize
+                  // override here — this sidesteps it entirely instead of
+                  // fighting it.
                   child: Obx(() {
                     final assigning = assigningIds.contains(report.ecgRecordId);
-                    return OutlinedButton.icon(
-                      onPressed: assigning ? null : onAssign,
-                      icon: assigning
-                          ? const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandRed),
-                            )
-                          : const Icon(Icons.medical_information_outlined, size: 14),
-                      label: Text(assigning ? 'Sending…' : 'Send to Cardiologist'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.brandRed,
-                        side: const BorderSide(color: AppColors.brandRed, width: 1),
-                        visualDensity: VisualDensity.compact,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    return Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(999),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: assigning ? null : onAssign,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: AppColors.brandRed),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (assigning)
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandRed),
+                                )
+                              else
+                                const Icon(Icons.medical_information_outlined, size: 14, color: AppColors.brandRed),
+                              const SizedBox(width: 6),
+                              Text(
+                                assigning ? 'Sending…' : 'Send to Cardiologist',
+                                style: const TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   }),
