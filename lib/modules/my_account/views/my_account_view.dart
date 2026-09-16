@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/widgets/app_confirm_sheet.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/my_account_controller.dart';
 
@@ -50,7 +51,7 @@ class MyAccountView extends GetView<MyAccountController> {
           ]),
           const SizedBox(height: 16),
           OutlinedButton(
-            onPressed: controller.signOut,
+            onPressed: () => _confirmSignOut(context),
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandRed, side: BorderSide.none, backgroundColor: AppColors.brandRedTint),
             child: const Text('Sign out'),
           ),
@@ -63,6 +64,17 @@ class MyAccountView extends GetView<MyAccountController> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context) async {
+    final confirmed = await AppConfirmSheet.show(
+      context,
+      icon: Icons.logout_rounded,
+      title: 'Log Out?',
+      message: 'You will need to sign in again with your email and password.',
+      confirmText: 'Yes, Log Out',
+    );
+    if (confirmed) controller.signOut();
   }
 
   String _initials(String name) {

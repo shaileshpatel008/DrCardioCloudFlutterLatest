@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/ecg/ecg_data.dart';
+import '../../../core/widgets/app_confirm_sheet.dart';
 import '../../../theme/app_colors.dart';
 import '../../settings/controllers/settings_controller.dart';
 import '../controllers/live_ecg_controller.dart';
@@ -24,7 +25,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _handleBack();
+        _handleBack(context);
       },
       child: Scaffold(
         backgroundColor: const Color(0xFF151312),
@@ -36,7 +37,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: _handleBack,
+                      onPressed: () => _handleBack(context),
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -196,28 +197,23 @@ class LiveEcgView extends GetView<LiveEcgController> {
   /// Port of `NewEcgActivity.onBackPressed()`: pop straight back when
   /// nothing is being captured, otherwise confirm first so a recording in
   /// progress isn't discarded by an accidental back-press.
-  void _handleBack() {
+  Future<void> _handleBack(BuildContext context) async {
     if (!controller.isReading.value) {
       Get.back();
       return;
     }
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Are you sure you want to stop reading and return to main screen?'),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text('No')),
-          TextButton(
-            onPressed: () {
-              Get.back(); // dismiss the dialog
-              controller.stopRecording();
-              Get.back(); // leave the screen
-            },
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
+    final confirmed = await AppConfirmSheet.show(
+      context,
+      icon: Icons.stop_circle_outlined,
+      title: 'Stop Reading?',
+      message: 'Are you sure you want to stop reading and return to main screen?',
+      confirmText: 'Yes, Stop',
+      isDismissible: false,
     );
+    if (confirmed) {
+      controller.stopRecording();
+      Get.back(); // leave the screen
+    }
   }
 
   String _formatElapsed(int seconds) {

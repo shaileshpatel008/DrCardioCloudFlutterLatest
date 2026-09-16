@@ -12,11 +12,13 @@ import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_engine.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_confirm_sheet.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
 import '../../../routes/app_routes.dart';
+import '../../../theme/app_colors.dart';
 import '../../settings/controllers/settings_controller.dart';
 import 'package:flutter/foundation.dart';
 
@@ -91,15 +93,15 @@ class LiveEcgController extends GetxController {
     // acknowledge notice so a fixed calibration waveform is never mistaken
     // for a patient's real ECG.
     if (isTestMode) {
-      Get.dialog(
-        AlertDialog(
-          title: const Text('Test Mode'),
-          content: const Text(
-            "This device is set to Test Mode. The waveform shown is the device's built-in fixed "
+      AppConfirmSheet.show(
+        Get.context!,
+        icon: Icons.science_outlined,
+        title: 'Test Mode',
+        message: "This device is set to Test Mode. The waveform shown is the device's built-in fixed "
             "calibration signal, not a real ECG — switch to ECG Mode in Settings to acquire from a patient.",
-          ),
-          actions: [TextButton(onPressed: Get.back, child: const Text('OK'))],
-        ),
+        confirmText: 'OK',
+        cancelText: null,
+        confirmColor: AppColors.ink,
       );
     }
   }

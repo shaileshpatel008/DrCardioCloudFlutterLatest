@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../core/widgets/app_confirm_sheet.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../theme/app_colors.dart';
 import '../../help/views/help_view.dart';
@@ -71,23 +72,15 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  void _confirmExit(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        content: const Text('Are you sure you want to exit from the app?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('No')),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              SystemNavigator.pop();
-            },
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
+  Future<void> _confirmExit(BuildContext context) async {
+    final confirmed = await AppConfirmSheet.show(
+      context,
+      icon: Icons.exit_to_app_rounded,
+      title: 'Exit App?',
+      message: 'Are you sure you want to exit from the app?',
+      confirmText: 'Yes, Exit',
+      isDismissible: false,
     );
+    if (confirmed) SystemNavigator.pop();
   }
 }
