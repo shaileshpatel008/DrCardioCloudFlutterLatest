@@ -17,6 +17,7 @@ class EcgRecordModel {
     required this.leadData,
     this.pdfPath,
     this.csvPath,
+    this.datPath,
     this.deviceId = '',
     this.latitude = '',
     this.longitude = '',
@@ -46,6 +47,10 @@ class EcgRecordModel {
   final String? pdfPath;
   final String? csvPath;
 
+  /// Raw waveform export path — see `DatFileService`. Nullable because
+  /// records saved before this field existed have none.
+  final String? datPath;
+
   final String deviceId;
   final String latitude;
   final String longitude;
@@ -61,7 +66,7 @@ class EcgRecordModel {
 
   SyncStatus syncStatus;
 
-  EcgRecordModel copyWith({SyncStatus? syncStatus, String? pdfPath, String? csvPath}) {
+  EcgRecordModel copyWith({SyncStatus? syncStatus, String? pdfPath, String? csvPath, String? datPath}) {
     return EcgRecordModel(
       id: id,
       dateTime: dateTime,
@@ -72,6 +77,7 @@ class EcgRecordModel {
       leadData: leadData,
       pdfPath: pdfPath ?? this.pdfPath,
       csvPath: csvPath ?? this.csvPath,
+      datPath: datPath ?? this.datPath,
       deviceId: deviceId,
       latitude: latitude,
       longitude: longitude,

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/csv_export_service.dart';
+import '../../../core/services/dat_file_service.dart';
 import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_engine.dart';
 import '../../../core/services/pdf_report_service.dart';
@@ -159,9 +160,14 @@ class LiveEcgController extends GetxController {
         longitude: position?.longitude.toString() ?? '',
       );
 
+      // All three exports are written to local storage first, unconditionally
+      // — same as the original (`NewEcgActivity.generateReport()` always
+      // writes .dat/.csv/.pdf before ever checking connectivity). Uploading
+      // is a separate, best-effort step below.
       final pdfFile = await PdfReportService.generate(record);
       final csvFile = await CsvExportService.generate(record);
-      record = record.copyWith(pdfPath: pdfFile.path, csvPath: csvFile.path);
+      final datFile = await DatFileService.generate(record);
+      record = record.copyWith(pdfPath: pdfFile.path, csvPath: csvFile.path, datPath: datFile.path);
 
       await _repository.saveLocally(record);
       await _repository.syncPendingQueue();

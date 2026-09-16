@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../data/models/ecg_record_model.dart';
+import 'dr_cardio_storage.dart';
 import 'ecg/ecg_data.dart';
 import 'storage_service.dart';
 
@@ -62,10 +62,8 @@ class PdfReportService {
       ),
     );
 
-    final dir = await getApplicationDocumentsDirectory();
-    final reportsDir = Directory(p.join(dir.path, 'ecg_reports'));
-    if (!await reportsDir.exists()) await reportsDir.create(recursive: true);
-    final file = File(p.join(reportsDir.path, '${record.id}.pdf'));
+    final dir = await DrCardioStorage.reportsDir();
+    final file = File(p.join(dir.path, '${record.id}.pdf'));
     await file.writeAsBytes(await doc.save());
     return file;
   }

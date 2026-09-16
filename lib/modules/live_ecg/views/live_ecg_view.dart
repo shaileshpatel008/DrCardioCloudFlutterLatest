@@ -20,21 +20,27 @@ class LiveEcgView extends GetView<LiveEcgController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF151312),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Get.back(),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF151312),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _handleBack,
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -183,6 +189,34 @@ class LiveEcgView extends GetView<LiveEcgController> {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  /// Port of `NewEcgActivity.onBackPressed()`: pop straight back when
+  /// nothing is being captured, otherwise confirm first so a recording in
+  /// progress isn't discarded by an accidental back-press.
+  void _handleBack() {
+    if (!controller.isReading.value) {
+      Get.back();
+      return;
+    }
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Are you sure you want to stop reading and return to main screen?'),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('No')),
+          TextButton(
+            onPressed: () {
+              Get.back(); // dismiss the dialog
+              controller.stopRecording();
+              Get.back(); // leave the screen
+            },
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
     );
   }
 

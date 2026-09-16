@@ -8,6 +8,7 @@ import 'core/services/app_logger.dart';
 import 'core/services/bluetooth/bluetooth_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/storage_service.dart';
+import 'data/repositories/ecg_repository.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'theme/app_theme.dart';
@@ -32,7 +33,12 @@ Future<void> main() async {
       };
 
       await StorageService.instance.init();
-      await Get.putAsync(() => ConnectivityService().init(), permanent: true);
+      final connectivity = await Get.putAsync(() => ConnectivityService().init(), permanent: true);
+      // Port of `MainActivity`'s `NetworkLiveData` observer: drain the
+      // pending-upload queue as soon as connectivity returns, instead of
+      // only syncing at the moment a new recording is saved or when the
+      // user manually retries from the Offline Reports screen.
+      connectivity.onReconnect(() => EcgRepository().syncPendingQueue());
       Get.put(BluetoothService(), permanent: true);
 
       runApp(const DrCardioApp());

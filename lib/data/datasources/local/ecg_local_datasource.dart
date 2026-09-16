@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -25,7 +24,7 @@ class EcgLocalDataSource {
     final dbPath = p.join(dir.path, 'drcardio.db');
     _db = await openDatabase(
       dbPath,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $_table (
@@ -38,6 +37,7 @@ class EcgLocalDataSource {
             lead_data_json TEXT,
             pdf_path TEXT,
             csv_path TEXT,
+            dat_path TEXT,
             device_id TEXT,
             latitude TEXT,
             longitude TEXT,
@@ -47,15 +47,13 @@ class EcgLocalDataSource {
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute('ALTER TABLE $_table ADD COLUMN dat_path TEXT');
+        }
+      },
     );
     return _db!;
-  }
-
-  Future<Directory> recordsDir() async {
-    final docs = await getApplicationDocumentsDirectory();
-    final dir = Directory(p.join(docs.path, 'ecg_reports'));
-    if (!await dir.exists()) await dir.create(recursive: true);
-    return dir;
   }
 
   Future<void> save(EcgRecordModel record) async {
@@ -106,6 +104,7 @@ class EcgLocalDataSource {
         'lead_data_json': jsonEncode(r.leadData),
         'pdf_path': r.pdfPath,
         'csv_path': r.csvPath,
+        'dat_path': r.datPath,
         'device_id': r.deviceId,
         'latitude': r.latitude,
         'longitude': r.longitude,
@@ -133,6 +132,7 @@ class EcgLocalDataSource {
       leadData: leadDataRaw.map((lead) => (lead as List).map((v) => (v as num).toDouble()).toList()).toList(),
       pdfPath: row['pdf_path'] as String?,
       csvPath: row['csv_path'] as String?,
+      datPath: row['dat_path'] as String?,
       deviceId: row['device_id'] as String? ?? '',
       latitude: row['latitude'] as String? ?? '',
       longitude: row['longitude'] as String? ?? '',
