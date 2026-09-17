@@ -7,7 +7,14 @@ import '../../../core/services/storage_service.dart';
 class SettingsController extends GetxController {
   final storage = StorageService.instance;
 
-  static const filterOptions = ['No', '0 to 25 Hz', '0 to 40 Hz', '5 to 25 Hz', '5 to 40 Hz', '50 Hz Notch'];
+  /// Port of `R.array.spinner_filter`/`spinner_actual_filter`: the original
+  /// app's own full 6-option list ('No', '0 to 25 Hz', '0 to 40 Hz',
+  /// '5 to 25 Hz', '5 to 40 Hz', '50 Hz Notch') is commented out there too
+  /// ("20210121: BARC only 2 options for filter to be shown") in favor of
+  /// just these 3 that actually ship. EcgFilter still implements all six —
+  /// only the ones offered here are restricted — so re-enabling the rest
+  /// later is just adding them back to this list.
+  static const filterOptions = ['No', '50 Hz Notch', '0 to 40 Hz'];
 
   /// `R.array.spinner_gain` / `spinner_actual_gain` — the original app's
   /// full 1/2/3/4/6/8/12 gain list is commented out in favor of this
