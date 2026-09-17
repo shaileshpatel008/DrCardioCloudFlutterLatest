@@ -130,9 +130,19 @@ class LiveEcgController extends GetxController {
   /// Patient Details form pre-filled with the current values, and on
   /// submit swaps [patient] for the edited one rather than starting a new
   /// recording (`PatientInfoController.isEditMode`'s branch).
+  ///
+  /// Wrapped in try/catch (unlike a plain fire-and-forget navigation)
+  /// specifically so a failure here is never silent: this button has no
+  /// other feedback affordance (no progress spinner, no disabled state),
+  /// so an uncaught error would just look like the tap did nothing.
   Future<void> changePatientData() async {
-    final updated = await Get.toNamed<PatientModel>(AppRoutes.patientInfo, arguments: patient.value);
-    if (updated != null) patient.value = updated;
+    try {
+      final updated = await Get.toNamed<PatientModel>(AppRoutes.patientInfo, arguments: patient.value);
+      if (updated != null) patient.value = updated;
+    } catch (e, st) {
+      AppLogger.e('Could not open Patient Details from Load Data', e, st);
+      AppToast.error('Could not open patient details. Please try again.');
+    }
   }
 
   @override

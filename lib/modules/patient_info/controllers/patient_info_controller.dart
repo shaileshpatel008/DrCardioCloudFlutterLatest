@@ -46,9 +46,16 @@ class PatientInfoController extends GetxController {
       bpController.text = args.bloodPressure;
       medicationsController.text = args.medications;
       commentsController.text = args.comments;
-      if (args.sex.isNotEmpty) gender.value = args.sex;
+      // Guards against a legacy/imported record whose stored sex isn't
+      // exactly one of the dropdown's own options (e.g. different casing)
+      // — feeding that straight into DropdownButtonFormField's value
+      // crashes it ("there should be exactly one item with this value"),
+      // which would make this whole screen fail to open silently.
+      if (_genderOptions.contains(args.sex)) gender.value = args.sex;
     }
   }
+
+  static const _genderOptions = ['Male', 'Female', 'Other'];
 
   void setGender(String value) => gender.value = value;
 
