@@ -24,6 +24,32 @@ class PatientInfoController extends GetxController {
   /// choose rather than one that could silently go unnoticed.
   final RxnString gender = RxnString();
 
+  /// True when opened to edit a record already loaded elsewhere (Load
+  /// Data's "change patient data" option), rather than for a fresh
+  /// recording — [Get.arguments] is a [PatientModel] to prefill instead of
+  /// null. `continueToRecording()` branches on this to return the edited
+  /// patient to the caller instead of resetting acquisition state and
+  /// navigating into a new live recording.
+  bool isEditMode = false;
+
+  @override
+  void onInit() {
+    super.onInit();
+    final args = Get.arguments;
+    if (args is PatientModel) {
+      isEditMode = true;
+      idController.text = args.patientId;
+      nameController.text = args.name;
+      ageController.text = args.age;
+      heightController.text = args.height;
+      weightController.text = args.weight;
+      bpController.text = args.bloodPressure;
+      medicationsController.text = args.medications;
+      commentsController.text = args.comments;
+      if (args.sex.isNotEmpty) gender.value = args.sex;
+    }
+  }
+
   void setGender(String value) => gender.value = value;
 
   void continueToRecording() {
@@ -40,6 +66,11 @@ class PatientInfoController extends GetxController {
       medications: medicationsController.text.trim(),
       comments: commentsController.text.trim(),
     );
+
+    if (isEditMode) {
+      Get.back(result: patient);
+      return;
+    }
 
     final ecg = EcgData.instance;
     ecg.resetEcgData();

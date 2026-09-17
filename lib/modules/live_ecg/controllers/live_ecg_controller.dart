@@ -34,8 +34,20 @@ class LiveEcgController extends GetxController {
   final EcgRepository _repository;
   late final EcgEngine engine;
 
-  late final PatientModel patient;
+  /// Reactive (not `late final`) because Load Data's "Change Patient Data"
+  /// option can replace it mid-visit — a fresh recording never changes it
+  /// after `onInit`, so this is a no-op extra layer for that flow.
+  late final Rx<PatientModel> patient;
   StreamSubscription<int>? _secondsSub;
+
+  /// Set when this screen was opened from Load Data (Get.arguments is the
+  /// saved [EcgRecordModel] instead of a bare [PatientModel]) — port of
+  /// `NewEcgActivity.checkFromLoadData()`: the 12-lead charts are filled
+  /// from the record's already-captured, already-filtered samples instead
+  /// of a live BLE stream, so there's nothing to Start/Stop, and Save
+  /// regenerates the report in place rather than creating a new recording.
+  EcgRecordModel? loadedRecord;
+  bool get isLoadedMode => loadedRecord != null;
 
   final RxInt elapsedSeconds = 0.obs;
   final RxBool isReading = false.obs;
@@ -53,7 +65,10 @@ class LiveEcgController extends GetxController {
   /// different, purely cosmetic number shown in the header timer chip.
   int get recordedSeconds => EcgData.instance.rawDataCount ~/ EcgData.instance.sampleRatePerSec;
 
-  bool get canSave => !isReading.value && !isSaving.value && recordedSeconds >= minRecordingSeconds;
+  /// Loaded data has no `rawDataCount` of its own (it's already-filtered
+  /// samples, not a raw stream) and no minimum-duration gate to satisfy —
+  /// the record was already long enough to have been saved once.
+  bool get canSave => isLoadedMode ? !isSaving.value : (!isReading.value && !isSaving.value && recordedSeconds >= minRecordingSeconds);
 
   /// 0 once [canSave] is true; counts down the seconds still needed so the
   /// Save button's progress ring has something to animate toward.
@@ -69,21 +84,55 @@ class LiveEcgController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    patient = Get.arguments as PatientModel;
+    final args = Get.arguments;
     engine = EcgEngine(bluetoothService);
     _secondsSub = engine.onSecondTick.listen((s) => elapsedSeconds.value = s);
 
     final storage = StorageService.instance;
     isTestMode = storage.testMode;
 
-    // Port of `NewEcgActivity.checkFromLoadData()`'s fresh-recording
-    // branch, which calls `setGain(settings.gain)` — both telling the
-    // device which hardware gain to use for this session (it doesn't
-    // remember this across connections/power cycles) and setting the
-    // chart display scale to match.
-    EcgData.instance.graphScale = double.tryParse(storage.gain) ?? 1;
-    final actualGain = int.tryParse(storage.actualGain);
-    if (actualGain != null) bluetoothService.sendGain(actualGain);
+    if (args is EcgRecordModel) {
+      loadedRecord = args;
+      patient = args.patient.obs;
+      _loadIntoChart(args);
+    } else {
+      patient = (args as PatientModel).obs;
+      // Port of `NewEcgActivity.checkFromLoadData()`'s fresh-recording
+      // branch, which calls `setGain(settings.gain)` — both telling the
+      // device which hardware gain to use for this session (it doesn't
+      // remember this across connections/power cycles) and setting the
+      // chart display scale to match.
+      EcgData.instance.graphScale = double.tryParse(storage.gain) ?? 1;
+      final actualGain = int.tryParse(storage.actualGain);
+      if (actualGain != null) bluetoothService.sendGain(actualGain);
+    }
+  }
+
+  /// Port of `ecgData.parseInfo()`/`mFile.readDatFile()`'s chart-filling
+  /// half — the record's samples are already down-sampled and filtered
+  /// (this app stores `chartData` directly, not raw ADC counts), so this
+  /// is just a copy into the singleton the chart widgets read, followed by
+  /// one manual `revision` bump so they actually repaint with it (nothing
+  /// else will — there's no live packet stream driving it in this mode).
+  void _loadIntoChart(EcgRecordModel record) {
+    final ecg = EcgData.instance;
+    for (var ch = 0; ch < EcgData.noOfChannels; ch++) {
+      ecg.chartData[ch]
+        ..clear()
+        ..addAll(ch < record.leadData.length ? record.leadData[ch] : const []);
+    }
+    ecg.deviceName = record.deviceName;
+    ecg.graphScale = double.tryParse(record.gain) ?? 1;
+    engine.revision.value++;
+  }
+
+  /// Port of the "Patient Data" menu item's edit flow — opens the same
+  /// Patient Details form pre-filled with the current values, and on
+  /// submit swaps [patient] for the edited one rather than starting a new
+  /// recording (`PatientInfoController.isEditMode`'s branch).
+  Future<void> changePatientData() async {
+    final updated = await Get.toNamed<PatientModel>(AppRoutes.patientInfo, arguments: patient.value);
+    if (updated != null) patient.value = updated;
   }
 
   @override
@@ -91,8 +140,9 @@ class LiveEcgController extends GetxController {
     super.onReady();
     // Port of `NewEcgActivity.showTestModePopup()` — a one-time, must-
     // acknowledge notice so a fixed calibration waveform is never mistaken
-    // for a patient's real ECG.
-    if (isTestMode) {
+    // for a patient's real ECG. Meaningless for already-captured data, so
+    // skipped in loaded mode.
+    if (isTestMode && !isLoadedMode) {
       AppConfirmSheet.show(
         Get.context!,
         icon: Icons.science_outlined,
@@ -146,21 +196,7 @@ class LiveEcgController extends GetxController {
   Future<void> saveAndExit() async {
     isSaving.value = true;
     try {
-      final ecg = EcgData.instance;
-      final storage = StorageService.instance;
-      final position = await _tryGetLocation();
-      var record = EcgRecordModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        dateTime: DateTime.now(),
-        patient: patient,
-        deviceName: ecg.deviceName ?? '',
-        filter: storage.filter,
-        gain: storage.gain,
-        leadData: ecg.chartData.map((l) => List<double>.from(l)).toList(),
-        deviceId: storage.savedDeviceName,
-        latitude: position?.latitude.toString() ?? '',
-        longitude: position?.longitude.toString() ?? '',
-      );
+      var record = await _buildRecordToSave();
 
       // All exports are written to local storage first, unconditionally —
       // same as the original (`NewEcgActivity.generateReport()` always
@@ -180,10 +216,39 @@ class LiveEcgController extends GetxController {
       await _repository.saveLocally(record);
       await _repository.syncPendingQueue();
       Get.offAllNamed(AppRoutes.home);
-      AppToast.success('Recording saved for ${patient.name}.');
+      AppToast.success(isLoadedMode ? 'Report updated for ${patient.value.name}.' : 'Recording saved for ${patient.value.name}.');
     } finally {
       isSaving.value = false;
     }
+  }
+
+  /// Loaded mode reuses the existing record's id/dateTime/leadData (so
+  /// `saveLocally`'s `ConflictAlgorithm.replace` updates the same row in
+  /// place instead of creating a duplicate) with just the patient info
+  /// possibly edited via [changePatientData] — matching the original's
+  /// `checkFromLoadData()` regenerating the report from the same
+  /// `ecgData.date_time`/samples rather than starting a fresh capture. A
+  /// fresh recording builds the record from scratch from the live buffer,
+  /// same as before this mode existed.
+  Future<EcgRecordModel> _buildRecordToSave() async {
+    if (isLoadedMode) {
+      return loadedRecord!.copyWith(patient: patient.value, syncStatus: SyncStatus.pending);
+    }
+    final ecg = EcgData.instance;
+    final storage = StorageService.instance;
+    final position = await _tryGetLocation();
+    return EcgRecordModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      dateTime: DateTime.now(),
+      patient: patient.value,
+      deviceName: ecg.deviceName ?? '',
+      filter: storage.filter,
+      gain: storage.gain,
+      leadData: ecg.chartData.map((l) => List<double>.from(l)).toList(),
+      deviceId: storage.savedDeviceName,
+      latitude: position?.latitude.toString() ?? '',
+      longitude: position?.longitude.toString() ?? '',
+    );
   }
 
   /// Best-effort location tag for the upload payload's latitude/longitude

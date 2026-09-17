@@ -62,7 +62,13 @@ class LoadDataView extends GetView<LoadDataController> {
                       style: const TextStyle(color: AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w600),
                     ),
                     trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
-                    onTap: () => Get.toNamed(AppRoutes.pdfViewer, arguments: record),
+                    // Port of `LoadDataActivity`'s item click: opens the
+                    // recording in the live ECG screen (not the PDF)
+                    // filled with its captured 12-lead data, with a
+                    // "change patient data" option and a working Save that
+                    // regenerates the report — same screen `NewEcgActivity`
+                    // uses via `checkFromLoadData()`, not a read-only viewer.
+                    onTap: () => Get.toNamed(AppRoutes.liveEcg, arguments: record),
                   );
                 },
               );

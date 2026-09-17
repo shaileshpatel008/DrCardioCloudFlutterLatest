@@ -77,11 +77,12 @@ class EcgRecordModel {
     String? csvPath,
     String? datPath,
     String? filteredCsvPath,
+    PatientModel? patient,
   }) {
     return EcgRecordModel(
       id: id,
       dateTime: dateTime,
-      patient: patient,
+      patient: patient ?? this.patient,
       deviceName: deviceName,
       filter: filter,
       gain: gain,

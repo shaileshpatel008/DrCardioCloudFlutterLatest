@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/widgets/app_confirm_sheet.dart';
@@ -50,20 +51,22 @@ class LiveEcgView extends GetView<LiveEcgController> {
                     ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Column(
+                    child: Obx(() => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(controller.patient.name,
+                        Text(controller.patient.value.name,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-                        Text('ID ${controller.patient.patientId} · ${controller.patient.age} / ${controller.patient.sex}',
+                        Text('ID ${controller.patient.value.patientId} · ${controller.patient.value.age} / ${controller.patient.value.sex}',
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600)),
                       ],
-                    ),
+                    )),
                   ),
                   const SizedBox(width: 6),
-                  if (controller.isTestMode)
+                  if (controller.isLoadedMode)
+                    const _Chip(label: 'LOADED', color: AppColors.monitorTrace, icon: Icons.folder_open_outlined)
+                  else if (controller.isTestMode)
                     const _Chip(label: 'TEST MODE', color: AppColors.brandRed)
                   else
                     ValueListenableBuilder<int?>(
@@ -74,19 +77,27 @@ class LiveEcgView extends GetView<LiveEcgController> {
                       },
                     ),
                   const SizedBox(width: 6),
-                  IconButton(
-                    onPressed: () => _showAcquisitionSettingsSheet(context),
-                    icon: const Icon(Icons.tune, color: Colors.white70, size: 20),
-                    tooltip: 'Filter & Gain',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+                  // Filter/Gain only affect samples as they're being
+                  // captured — loaded data is already filtered, so
+                  // reopening this here would change nothing and just
+                  // mislead.
+                  if (!controller.isLoadedMode)
+                    IconButton(
+                      onPressed: () => _showAcquisitionSettingsSheet(context),
+                      icon: const Icon(Icons.tune, color: Colors.white70, size: 20),
+                      tooltip: 'Filter & Gain',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   const SizedBox(width: 6),
-                  Obx(() => _Chip(
-                        label: _formatElapsed(controller.elapsedSeconds.value),
-                        color: AppColors.monitorTrace,
-                        dot: true,
-                      )),
+                  if (controller.isLoadedMode)
+                    _Chip(label: _formatDate(controller.loadedRecord!.dateTime), color: AppColors.monitorTrace, icon: Icons.event_outlined)
+                  else
+                    Obx(() => _Chip(
+                          label: _formatElapsed(controller.elapsedSeconds.value),
+                          color: AppColors.monitorTrace,
+                          dot: true,
+                        )),
                 ],
               ),
             ),
@@ -173,24 +184,34 @@ class LiveEcgView extends GetView<LiveEcgController> {
               padding: const EdgeInsets.fromLTRB(24, 6, 24, 20),
               child: Obx(() => Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _ControlButton(
-                        icon: Icons.play_arrow,
-                        label: 'Start',
-                        enabled: !controller.isReading.value,
-                        onTap: controller.startRecording,
-                        primary: !controller.isReading.value,
-                      ),
-                      _ControlButton(
-                        icon: Icons.stop,
-                        label: 'Stop',
-                        enabled: controller.isReading.value,
-                        onTap: controller.stopRecording,
-                        primary: controller.isReading.value,
-                        pulsing: controller.isReading.value,
-                      ),
-                      _SaveButton(controller: controller),
-                    ],
+                    children: controller.isLoadedMode
+                        ? [
+                            _ControlButton(
+                              icon: Icons.edit_outlined,
+                              label: 'Patient',
+                              enabled: true,
+                              onTap: controller.changePatientData,
+                            ),
+                            _SaveButton(controller: controller),
+                          ]
+                        : [
+                            _ControlButton(
+                              icon: Icons.play_arrow,
+                              label: 'Start',
+                              enabled: !controller.isReading.value,
+                              onTap: controller.startRecording,
+                              primary: !controller.isReading.value,
+                            ),
+                            _ControlButton(
+                              icon: Icons.stop,
+                              label: 'Stop',
+                              enabled: controller.isReading.value,
+                              onTap: controller.stopRecording,
+                              primary: controller.isReading.value,
+                              pulsing: controller.isReading.value,
+                            ),
+                            _SaveButton(controller: controller),
+                          ],
                   )),
             ),
           ],
@@ -228,6 +249,8 @@ class LiveEcgView extends GetView<LiveEcgController> {
     final s = (seconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
   }
+
+  String _formatDate(DateTime dateTime) => DateFormat('d MMM, h:mm a').format(dateTime);
 
   void _showAcquisitionSettingsSheet(BuildContext context) {
     final settings = Get.find<SettingsController>();
@@ -402,7 +425,10 @@ class _SaveButton extends StatelessWidget {
       // a once-a-second Rx tick to rebuild on while recording, so the
       // ring animates continuously instead of only jumping at Start/Stop.
       controller.elapsedSeconds.value;
-      final progress = (controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
+      // Loaded data has no minimum-duration window to fill — it's ready
+      // the moment the screen opens, so the ring just shows full/green
+      // instead of stuck at empty (recordedSeconds is 0 in this mode).
+      final progress = controller.isLoadedMode ? 1.0 : (controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
       final ready = controller.canSave;
       return Column(
         children: [

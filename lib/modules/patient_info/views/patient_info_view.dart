@@ -24,9 +24,11 @@ class PatientInfoView extends GetView<PatientInfoController> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                 children: [
-                  const Text(
-                    'Enter patient details before starting the recording',
-                    style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
+                  Text(
+                    controller.isEditMode
+                        ? 'Update the patient details for this recording'
+                        : 'Enter patient details before starting the recording',
+                    style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
                   ),
                   const SizedBox(height: 12),
                   _SectionCard(
@@ -146,8 +148,8 @@ class PatientInfoView extends GetView<PatientInfoController> {
               ),
               child: FilledButton.icon(
                 onPressed: controller.continueToRecording,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Continue to Recording'),
+                icon: Icon(controller.isEditMode ? Icons.check : Icons.arrow_forward),
+                label: Text(controller.isEditMode ? 'Save Changes' : 'Continue to Recording'),
               ),
             ),
           ],
