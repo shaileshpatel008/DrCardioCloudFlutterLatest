@@ -78,6 +78,8 @@ class SettingsView extends GetView<SettingsController> {
         const SizedBox(height: 18),
         const _SectionLabel('REPORT'),
         _Card(children: [
+          _ReportTypeRow(controller: controller),
+          const Divider(height: 1),
           Obx(() => _DropdownRow(
                 icon: Icons.timeline,
                 label: 'Long lead',
@@ -89,7 +91,8 @@ class SettingsView extends GetView<SettingsController> {
         const Padding(
           padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
           child: Text(
-            'Which lead the full-width rhythm strip at the bottom of the PDF report plots.',
+            'Report type controls the PDF\'s lead layout — one page is generated per selected type. '
+            'Long lead is which lead the full-width rhythm strip at the bottom plots.',
             style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
@@ -189,6 +192,78 @@ class _SwitchRow extends StatelessWidget {
         title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
         trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: AppColors.brandRed),
       );
+}
+
+/// Port of `alert_report`'s "{n} selected" row — tapping opens the
+/// multi-select checklist (`openReportTypesSelectionDialog()`'s
+/// `setMultiChoiceItems`) as a bottom sheet instead of an AlertDialog,
+/// matching this app's sheet-based pattern elsewhere.
+class _ReportTypeRow extends StatelessWidget {
+  const _ReportTypeRow({required this.controller});
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() => ListTile(
+          leading: const _IconChip(Icons.picture_as_pdf_outlined),
+          title: const Text('Report type', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          subtitle: Text(
+            '${controller.reportTypes.length} selected · ${controller.reportTypes.join(', ')}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11.5, color: AppColors.muted2, fontWeight: FontWeight.w600),
+          ),
+          trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
+          onTap: () => _showReportTypeSheet(context),
+        ));
+  }
+
+  void _showReportTypeSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const Text('Report Type', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 4),
+              const Text(
+                'Generate one PDF page per selected layout',
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Obx(() => Column(
+                    children: SettingsController.reportTypeOptions
+                        .map((type) => CheckboxListTile(
+                              value: controller.reportTypes.contains(type),
+                              onChanged: (v) => controller.toggleReportType(type, v ?? false),
+                              title: Text(type, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                              activeColor: AppColors.brandRed,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              contentPadding: EdgeInsets.zero,
+                            ))
+                        .toList(),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _IconChip extends StatelessWidget {

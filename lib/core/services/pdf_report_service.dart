@@ -28,25 +28,21 @@ class PdfReportService {
   static Future<File> generate(EcgRecordModel record) async {
     final storage = StorageService.instance;
     final doc = pw.Document();
+    final reportTypes = storage.reportTypes.isEmpty ? const ['Simultaneous 4x3'] : storage.reportTypes;
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(28),
         header: (context) => _buildLetterhead(storage),
+        // Port of `PdfGenerator.generatePDF()`'s loop over
+        // `settings.reportTypes`/`settings.reports[i]` — one page per
+        // selected report type, appended to the same document.
         build: (context) => [
-          pw.SizedBox(height: 10),
-          _buildPatientInfoTable(record),
-          pw.SizedBox(height: 14),
-          pw.Text('12-LEAD ECG', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
-          pw.SizedBox(height: 6),
-          _buildLeadGrid(record),
-          pw.SizedBox(height: 14),
-          pw.Text('RHYTHM STRIP — LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
-          pw.SizedBox(height: 6),
-          _buildRhythmStrip(record, storage.longLead),
-          pw.SizedBox(height: 16),
-          _buildCalibrationFooter(record, storage),
+          for (var i = 0; i < reportTypes.length; i++) ...[
+            if (i > 0) pw.NewPage(),
+            ..._buildReportPage(record, storage, reportTypes[i]),
+          ],
         ],
         footer: (context) => pw.Column(
           children: [
@@ -67,6 +63,48 @@ class PdfReportService {
     final file = File(p.join(dir.path, '${RecordFileNaming.stem(record)}.pdf'));
     await file.writeAsBytes(await doc.save());
     return file;
+  }
+
+  /// Port of `PdfGenerator.getReportPage()`'s switch over reportType:
+  /// grid shape and column count come from the "NxM" name (6x2 → 2
+  /// columns of 6, 12x1 → 1 column of 12, else 3 columns of 4), and
+  /// "Simultaneous" vs "Sequential" decides whether every column shows the
+  /// same time window or each one a later slice of the recording — same
+  /// as the original's `data_start = simultaneous ? 0 : floor(ch/rows) *
+  /// graph_duration`. Only the 4x3 layouts get the extra full-width long
+  /// lead strip, matching `draw4x3Graphs()`'s dedicated final row (6x2 and
+  /// 12x1 have no equivalent in the original).
+  static List<pw.Widget> _buildReportPage(EcgRecordModel record, StorageService storage, String reportType) {
+    final simultaneous = reportType.startsWith('Simultaneous');
+    final int columns;
+    final int rowsPerColumn;
+    if (reportType.contains('6x2')) {
+      columns = 2;
+      rowsPerColumn = 6;
+    } else if (reportType == '12x1') {
+      columns = 1;
+      rowsPerColumn = 12;
+    } else {
+      columns = 3;
+      rowsPerColumn = 4;
+    }
+
+    return [
+      pw.SizedBox(height: 10),
+      _buildPatientInfoTable(record),
+      pw.SizedBox(height: 14),
+      pw.Text('12-LEAD ECG — ${reportType.toUpperCase()}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
+      pw.SizedBox(height: 6),
+      _buildLeadGrid(record, columns: columns, rowsPerColumn: rowsPerColumn, simultaneous: simultaneous),
+      if (reportType.contains('4x3')) ...[
+        pw.SizedBox(height: 14),
+        pw.Text('RHYTHM STRIP — LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
+        pw.SizedBox(height: 6),
+        _buildRhythmStrip(record, storage.longLead),
+      ],
+      pw.SizedBox(height: 16),
+      _buildCalibrationFooter(record, storage),
+    ];
   }
 
   static pw.Widget _buildLetterhead(StorageService storage) {
@@ -137,29 +175,52 @@ class PdfReportService {
     );
   }
 
-  static pw.Widget _buildLeadGrid(EcgRecordModel record) {
-    final rows = <pw.Widget>[];
-    for (var r = 0; r < 4; r++) {
-      rows.add(pw.Row(
-        children: List.generate(3, (c) {
-          final index = r * 3 + c;
-          final leadName = index < EcgData.leadName.length ? EcgData.leadName[index] : '';
-          final samples = index < record.leadData.length ? record.leadData[index] : const <double>[];
-          return pw.Expanded(
-            child: pw.Container(
-              margin: const pw.EdgeInsets.all(2),
-              height: 46,
-              decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor, width: 0.5)),
-              child: pw.Stack(children: [
-                pw.Positioned(top: 2, left: 3, child: pw.Text(leadName, style: pw.TextStyle(fontSize: 6, color: _mutedColor))),
-                pw.Center(child: _tracePainter(samples, width: 150, height: 40)),
-              ]),
-            ),
-          );
-        }),
-      ));
+  /// [columns]/[rowsPerColumn] shape the grid ([columns] * [rowsPerColumn]
+  /// must be 12); leads fill column-major (column 0 gets leads
+  /// 0..rowsPerColumn-1, matching the original's `column = floor(ch /
+  /// rows)`) so a 4x3 report reads the standard clinical way — limb leads,
+  /// then augmented, then chest — rather than row-major. When not
+  /// [simultaneous], each column plots a later slice of the recording
+  /// instead of all columns sharing the same (latest) window.
+  static pw.Widget _buildLeadGrid(EcgRecordModel record, {required int columns, required int rowsPerColumn, required bool simultaneous}) {
+    final cellHeight = rowsPerColumn > 6 ? 34.0 : (rowsPerColumn > 4 ? 40.0 : 46.0);
+    final columnWidgets = <pw.Widget>[];
+    for (var col = 0; col < columns; col++) {
+      final cells = <pw.Widget>[];
+      for (var row = 0; row < rowsPerColumn; row++) {
+        final index = col * rowsPerColumn + row;
+        final leadName = index < EcgData.leadName.length ? EcgData.leadName[index] : '';
+        final full = index < record.leadData.length ? record.leadData[index] : const <double>[];
+        final samples = simultaneous ? full : _sequentialSlice(full, columns, col);
+        cells.add(pw.Container(
+          margin: const pw.EdgeInsets.all(2),
+          height: cellHeight,
+          decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor, width: 0.5)),
+          child: pw.Stack(children: [
+            pw.Positioned(top: 2, left: 3, child: pw.Text(leadName, style: pw.TextStyle(fontSize: 6, color: _mutedColor))),
+            pw.Center(child: _tracePainter(samples, width: columns == 1 ? 500 : 150, height: cellHeight - 6)),
+          ]),
+        ));
+      }
+      columnWidgets.add(pw.Expanded(child: pw.Column(children: cells)));
     }
-    return pw.Column(children: rows);
+    return pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.start, children: columnWidgets);
+  }
+
+  /// Splits [samples] into [columns] equal contiguous chunks and returns
+  /// the one for [columnIndex] — port of the original's per-column
+  /// `data_start` offset for a "Sequential" report, approximated here as
+  /// dividing the recording into as many time segments as there are
+  /// columns rather than a fixed on-device `graph_duration`, since this
+  /// app's samples are already down-sampled to a fixed count rather than a
+  /// raw, device-clock-timed stream.
+  static List<double> _sequentialSlice(List<double> samples, int columns, int columnIndex) {
+    if (samples.isEmpty || columns <= 1) return samples;
+    final chunk = samples.length ~/ columns;
+    if (chunk == 0) return samples;
+    final start = columnIndex * chunk;
+    final end = columnIndex == columns - 1 ? samples.length : start + chunk;
+    return samples.sublist(start, end);
   }
 
   static pw.Widget _buildRhythmStrip(EcgRecordModel record, String longLead) {

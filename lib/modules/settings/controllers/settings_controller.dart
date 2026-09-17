@@ -32,6 +32,13 @@ class SettingsController extends GetxController {
   /// report's rhythm strip plots (`SettingsActivity.openLongLeadSelectionDialog()`).
   static const longLeadOptions = EcgData.leadName;
 
+  /// Port of `R.array.generate_report`: the original ships only its first
+  /// 4 entries ('Simultaneous 4x3', 'Sequential 4x3', 'Simultaneous 6x2',
+  /// 'Sequential 6x2') and leaves '12x1' commented out even though
+  /// `PdfGenerator.generate12x1ReportPage()` fully implements it — that one
+  /// is added back here rather than left hidden.
+  static const reportTypeOptions = ['Simultaneous 4x3', 'Sequential 4x3', 'Simultaneous 6x2', 'Sequential 6x2', '12x1'];
+
   final RxString filter = ''.obs;
   final RxString gain = ''.obs;
   final RxBool autoSave = true.obs;
@@ -39,6 +46,11 @@ class SettingsController extends GetxController {
   final RxInt xAxisScale = 25.obs;
   final RxBool testMode = false.obs;
   final RxString longLead = ''.obs;
+
+  /// Multi-select, matching `settings.reports` — one PDF page is generated
+  /// per selected type. Defaults to just 'Simultaneous 4x3' (`reports[0]
+  /// = true` default), same as the original.
+  final RxList<String> reportTypes = <String>[].obs;
 
   @override
   void onInit() {
@@ -50,6 +62,8 @@ class SettingsController extends GetxController {
     xAxisScale.value = storage.xAxisScale;
     testMode.value = storage.testMode;
     longLead.value = longLeadOptions.contains(storage.longLead) ? storage.longLead : 'II';
+    final savedTypes = storage.reportTypes.where(reportTypeOptions.contains).toList();
+    reportTypes.assignAll(savedTypes.isEmpty ? ['Simultaneous 4x3'] : savedTypes);
   }
 
   void setFilter(String value) {
@@ -83,6 +97,21 @@ class SettingsController extends GetxController {
   void setLongLead(String value) {
     longLead.value = value;
     storage.longLead = value;
+  }
+
+  /// A report with no selected type makes no sense, so unchecking the
+  /// last remaining one is a no-op — same effect as the original never
+  /// offering a way to end up with every checkbox off.
+  void toggleReportType(String type, bool selected) {
+    final updated = [...reportTypes];
+    if (selected) {
+      if (!updated.contains(type)) updated.add(type);
+    } else {
+      updated.remove(type);
+    }
+    if (updated.isEmpty) return;
+    reportTypes.assignAll(updated);
+    storage.reportTypes = updated;
   }
 
   /// [value] is the display label ('ECG'/'Test'), not the stored bool —

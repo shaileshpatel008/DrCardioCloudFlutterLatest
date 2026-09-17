@@ -96,6 +96,17 @@ class StorageService {
   String get longLead => _box.read('SelectedLongLead') ?? 'II';
   set longLead(String v) => _box.write('SelectedLongLead', v);
 
+  /// Which PDF layout(s) to generate — `SettingsActivity`'s multi-select
+  /// "Report Type" checklist (`settings.reports` boolean array, pref key
+  /// "settings_reports"). One PDF page is produced per selected type.
+  /// Defaults to just "Simultaneous 4x3" (`reports[0] = true` default).
+  List<String> get reportTypes {
+    final raw = _box.read('settings_report_types');
+    return raw is List ? raw.cast<String>() : const ['Simultaneous 4x3'];
+  }
+
+  set reportTypes(List<String> v) => _box.write('settings_report_types', v);
+
   String get doctorSignaturePath => _box.read('settings_doctor_signature_path') ?? '';
   set doctorSignaturePath(String v) => _box.write('settings_doctor_signature_path', v);
 
