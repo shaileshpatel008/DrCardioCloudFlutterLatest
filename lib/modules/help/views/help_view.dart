@@ -41,6 +41,53 @@ class HelpView extends GetView<HelpController> {
             ],
           ),
         ),
+        const SizedBox(height: 10),
+        // Port of `helpDialog()` — the old app's Help tab was this
+        // Call/WhatsApp prompt on its own; here it sits alongside the FAQ
+        // content as a straightforward "still stuck? contact us" card.
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.white, border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Still stuck?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+              const SizedBox(height: 3),
+              const Text(
+                'Call or chat with our support team',
+                style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: controller.callSupport,
+                      icon: const Icon(Icons.call_outlined, size: 18),
+                      label: const Text('Call'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.brandRed,
+                        side: const BorderSide(color: AppColors.brandRed),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: controller.chatOnWhatsApp,
+                      icon: const Icon(Icons.chat_outlined, size: 18),
+                      label: const Text('WhatsApp'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF25D366),
+                        side: const BorderSide(color: Color(0xFF25D366)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
         const Text(
           'Kavitul Technologies Pvt. Ltd.\nsupport@drcardio.in',

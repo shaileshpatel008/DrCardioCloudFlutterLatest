@@ -55,5 +55,14 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required on Android 11+ for url_launcher's tel: links (Help
+             screen's "Call" button) to resolve to the Dialer — unlike
+             http/https, tel: isn't automatically visible under package
+             visibility, so without this the launch silently fails as if
+             no app could handle it. -->
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
+        </intent>
     </queries>
 </manifest>
