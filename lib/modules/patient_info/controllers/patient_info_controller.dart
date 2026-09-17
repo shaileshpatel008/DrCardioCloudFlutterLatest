@@ -6,6 +6,7 @@ import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../routes/app_routes.dart';
+import '../../live_ecg/controllers/live_ecg_controller.dart';
 
 class PatientInfoController extends GetxController {
   final formKey = GlobalKey<FormState>();
@@ -27,9 +28,9 @@ class PatientInfoController extends GetxController {
   /// True when opened to edit a record already loaded elsewhere (Load
   /// Data's "change patient data" option), rather than for a fresh
   /// recording — [Get.arguments] is a [PatientModel] to prefill instead of
-  /// null. `continueToRecording()` branches on this to return the edited
-  /// patient to the caller instead of resetting acquisition state and
-  /// navigating into a new live recording.
+  /// null. `continueToRecording()` branches on this to write the edited
+  /// patient straight into the still-alive LiveEcgController instead of
+  /// resetting acquisition state and navigating into a new live recording.
   bool isEditMode = false;
 
   @override
@@ -75,7 +76,15 @@ class PatientInfoController extends GetxController {
     );
 
     if (isEditMode) {
-      Get.back(result: patient);
+      // Writing straight into the caller's controller (same proven
+      // Get.find<T>() pattern used throughout this app) rather than
+      // returning a typed result through Get.back()/Get.toNamed<T>() —
+      // this screen is only ever pushed on top of Live ECG for editing,
+      // so it's still alive and registered underneath.
+      if (Get.isRegistered<LiveEcgController>()) {
+        Get.find<LiveEcgController>().patient.value = patient;
+      }
+      Get.back();
       return;
     }
 

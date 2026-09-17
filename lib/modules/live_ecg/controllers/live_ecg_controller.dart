@@ -127,9 +127,12 @@ class LiveEcgController extends GetxController {
   }
 
   /// Port of the "Patient Data" menu item's edit flow — opens the same
-  /// Patient Details form pre-filled with the current values, and on
-  /// submit swaps [patient] for the edited one rather than starting a new
-  /// recording (`PatientInfoController.isEditMode`'s branch).
+  /// Patient Details form pre-filled with the current values.
+  /// `PatientInfoController.continueToRecording()`'s edit-mode branch
+  /// writes the edited patient straight into [patient] (this controller is
+  /// still registered underneath while that screen is pushed on top) and
+  /// pops back, rather than routing the value back through a typed
+  /// `Get.back(result:)`/`Get.toNamed<T>()` round trip.
   ///
   /// Wrapped in try/catch (unlike a plain fire-and-forget navigation)
   /// specifically so a failure here is never silent: this button has no
@@ -137,8 +140,7 @@ class LiveEcgController extends GetxController {
   /// so an uncaught error would just look like the tap did nothing.
   Future<void> changePatientData() async {
     try {
-      final updated = await Get.toNamed<PatientModel>(AppRoutes.patientInfo, arguments: patient.value);
-      if (updated != null) patient.value = updated;
+      await Get.toNamed(AppRoutes.patientInfo, arguments: patient.value);
     } catch (e, st) {
       AppLogger.e('Could not open Patient Details from Load Data', e, st);
       AppToast.error('Could not open patient details. Please try again.');
