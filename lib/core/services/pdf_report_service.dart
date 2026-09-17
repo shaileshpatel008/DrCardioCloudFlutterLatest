@@ -42,9 +42,9 @@ class PdfReportService {
           pw.SizedBox(height: 6),
           _buildLeadGrid(record),
           pw.SizedBox(height: 14),
-          pw.Text('RHYTHM STRIP — LEAD II', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
+          pw.Text('RHYTHM STRIP — LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
           pw.SizedBox(height: 6),
-          _buildRhythmStrip(record),
+          _buildRhythmStrip(record, storage.longLead),
           pw.SizedBox(height: 16),
           _buildCalibrationFooter(record, storage),
         ],
@@ -162,8 +162,14 @@ class PdfReportService {
     return pw.Column(children: rows);
   }
 
-  static pw.Widget _buildRhythmStrip(EcgRecordModel record) {
-    final samples = record.leadData.length > 1 ? record.leadData[1] : const <double>[];
+  static pw.Widget _buildRhythmStrip(EcgRecordModel record, String longLead) {
+    // Port of `PdfGenerator`'s `ECGLeads.getLeadIndex(PrefHelper.getString
+    // ("SelectedLongLead", "II"))` — falls back to Lead II (index 1) both
+    // when the stored name isn't found and via the same "II" default the
+    // preference itself uses.
+    final index = EcgData.leadName.indexOf(longLead);
+    final leadIndex = index == -1 ? 1 : index;
+    final samples = leadIndex < record.leadData.length ? record.leadData[leadIndex] : const <double>[];
     return pw.Container(
       height: 60,
       decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor, width: 0.5)),

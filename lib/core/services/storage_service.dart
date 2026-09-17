@@ -90,6 +90,12 @@ class StorageService {
   int get xAxisScale => _box.read('settings_xAxisScale') ?? 25;
   set xAxisScale(int v) => _box.write('settings_xAxisScale', v);
 
+  /// Which lead the PDF's rhythm strip plots — `SettingsActivity`'s
+  /// "Long Lead" picker, same pref key (`SelectedLongLead`) and default
+  /// ("II") as the original.
+  String get longLead => _box.read('SelectedLongLead') ?? 'II';
+  set longLead(String v) => _box.write('SelectedLongLead', v);
+
   String get doctorSignaturePath => _box.read('settings_doctor_signature_path') ?? '';
   set doctorSignaturePath(String v) => _box.write('settings_doctor_signature_path', v);
 

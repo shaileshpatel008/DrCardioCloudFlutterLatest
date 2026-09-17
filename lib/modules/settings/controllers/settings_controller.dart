@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../../../core/services/app_logger.dart';
+import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_filter.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -27,12 +28,17 @@ class SettingsController extends GetxController {
 
   static const modeOptions = ['ECG', 'Test'];
 
+  /// Port of `R.array.longLeadList` — which of the 12 leads the PDF
+  /// report's rhythm strip plots (`SettingsActivity.openLongLeadSelectionDialog()`).
+  static const longLeadOptions = EcgData.leadName;
+
   final RxString filter = ''.obs;
   final RxString gain = ''.obs;
   final RxBool autoSave = true.obs;
   final RxBool autoAssignCardiologist = false.obs;
   final RxInt xAxisScale = 25.obs;
   final RxBool testMode = false.obs;
+  final RxString longLead = ''.obs;
 
   @override
   void onInit() {
@@ -43,6 +49,7 @@ class SettingsController extends GetxController {
     autoAssignCardiologist.value = storage.autoAssignCardiologist;
     xAxisScale.value = storage.xAxisScale;
     testMode.value = storage.testMode;
+    longLead.value = longLeadOptions.contains(storage.longLead) ? storage.longLead : 'II';
   }
 
   void setFilter(String value) {
@@ -71,6 +78,11 @@ class SettingsController extends GetxController {
   void setXAxisScale(int value) {
     xAxisScale.value = value;
     storage.xAxisScale = value;
+  }
+
+  void setLongLead(String value) {
+    longLead.value = value;
+    storage.longLead = value;
   }
 
   /// [value] is the display label ('ECG'/'Test'), not the stored bool —

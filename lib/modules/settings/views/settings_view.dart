@@ -55,7 +55,7 @@ class SettingsView extends GetView<SettingsController> {
           const Divider(height: 1),
           Obx(() => _DropdownRow(
                 icon: Icons.speed,
-                label: 'Paper speed',
+                label: 'Plot speed',
                 value: '${controller.xAxisScale.value} mm/s',
                 options: const ['25 mm/s', '50 mm/s'],
                 onChanged: (v) => controller.setXAxisScale(int.parse(v.split(' ').first)),
@@ -75,6 +75,24 @@ class SettingsView extends GetView<SettingsController> {
                 onChanged: controller.setAutoAssignCardiologist,
               )),
         ]),
+        const SizedBox(height: 18),
+        const _SectionLabel('REPORT'),
+        _Card(children: [
+          Obx(() => _DropdownRow(
+                icon: Icons.timeline,
+                label: 'Long lead',
+                value: controller.longLead.value,
+                options: SettingsController.longLeadOptions,
+                onChanged: controller.setLongLead,
+              )),
+        ]),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
+          child: Text(
+            'Which lead the full-width rhythm strip at the bottom of the PDF report plots.',
+            style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
+          ),
+        ),
         const SizedBox(height: 18),
         const _SectionLabel('ACCOUNT'),
         _Card(children: [
