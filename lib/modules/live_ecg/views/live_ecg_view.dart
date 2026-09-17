@@ -182,37 +182,47 @@ class LiveEcgView extends GetView<LiveEcgController> {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 6, 24, 20),
-              child: Obx(() => Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: controller.isLoadedMode
-                        ? [
-                            _ControlButton(
-                              icon: Icons.edit_outlined,
-                              label: 'Patient',
-                              enabled: true,
-                              onTap: controller.changePatientData,
-                            ),
-                            _SaveButton(controller: controller),
-                          ]
-                        : [
-                            _ControlButton(
-                              icon: Icons.play_arrow,
-                              label: 'Start',
-                              enabled: !controller.isReading.value,
-                              onTap: controller.startRecording,
-                              primary: !controller.isReading.value,
-                            ),
-                            _ControlButton(
-                              icon: Icons.stop,
-                              label: 'Stop',
-                              enabled: controller.isReading.value,
-                              onTap: controller.stopRecording,
-                              primary: controller.isReading.value,
-                              pulsing: controller.isReading.value,
-                            ),
-                            _SaveButton(controller: controller),
-                          ],
-                  )),
+              // isLoadedMode never changes over this screen's lifetime, so
+              // it doesn't belong inside an Obx — and the loaded-mode row
+              // reads no observable at all (only _SaveButton's own,
+              // separately-scoped Obx does), so wrapping the whole Row in
+              // one here left GetX with a build that touched zero
+              // observables in that branch, which it treats as a hard
+              // error ("improper use of a GetX") rather than a no-op.
+              child: controller.isLoadedMode
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _ControlButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Patient',
+                          enabled: true,
+                          onTap: controller.changePatientData,
+                        ),
+                        _SaveButton(controller: controller),
+                      ],
+                    )
+                  : Obx(() => Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _ControlButton(
+                            icon: Icons.play_arrow,
+                            label: 'Start',
+                            enabled: !controller.isReading.value,
+                            onTap: controller.startRecording,
+                            primary: !controller.isReading.value,
+                          ),
+                          _ControlButton(
+                            icon: Icons.stop,
+                            label: 'Stop',
+                            enabled: controller.isReading.value,
+                            onTap: controller.stopRecording,
+                            primary: controller.isReading.value,
+                            pulsing: controller.isReading.value,
+                          ),
+                          _SaveButton(controller: controller),
+                        ],
+                      )),
             ),
           ],
         ),
