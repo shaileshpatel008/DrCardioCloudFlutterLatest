@@ -226,8 +226,20 @@ class LiveEcgController extends GetxController {
       );
 
       await _repository.saveLocally(record);
+      // Returns immediately while offline (ConnectivityService gate inside
+      // syncPendingQueue), so this never blocks getting to the report —
+      // same as the original, which always writes the PDF/dat/csv first
+      // and opens the viewer regardless of connectivity or upload result.
       await _repository.syncPendingQueue();
-      Get.offAllNamed(AppRoutes.home);
+      // Port of `NewEcgActivity.generateReport()` -> `openGeneratedPDF()`:
+      // the original opens the just-written PDF straight from disk rather
+      // than returning to the main screen, and does this unconditionally
+      // (no network involved) — PdfViewerController already prefers
+      // record.pdfPath, which was just written above, so this works fully
+      // offline the same way. Replaces this screen (not a plain push) so
+      // Back from the viewer returns to wherever this screen was opened
+      // from, not back into a finished recording/edit session.
+      Get.offNamed(AppRoutes.pdfViewer, arguments: record);
       AppToast.success(isLoadedMode ? 'Report updated for ${patient.value.name}.' : 'Recording saved for ${patient.value.name}.');
     } finally {
       isSaving.value = false;
