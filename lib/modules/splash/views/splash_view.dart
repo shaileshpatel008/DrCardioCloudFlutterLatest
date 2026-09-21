@@ -48,14 +48,17 @@ class SplashView extends GetView<SplashController> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 116,
-                height: 116,
+                width: 128,
+                height: 128,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.10), blurRadius: 40, offset: const Offset(0, 16))],
                 ),
-                padding: const EdgeInsets.all(24),
+                // Original app icon — its red disc is already baked into
+                // the asset, so no extra tint/background is layered on top
+                // of it, just the white lift-off disc behind it.
+                padding: const EdgeInsets.all(20),
                 child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
               ),
               const SizedBox(height: 26),
@@ -63,7 +66,7 @@ class SplashView extends GetView<SplashController> {
                 text: const TextSpan(
                   style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
                   children: [
-                    TextSpan(text: 'Dr.', style: TextStyle(color: AppColors.ink)),
+                    TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
                     TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
                   ],
                 ),
