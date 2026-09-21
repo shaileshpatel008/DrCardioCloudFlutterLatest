@@ -55,11 +55,13 @@ class SplashView extends GetView<SplashController> {
                   shape: BoxShape.circle,
                   boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.10), blurRadius: 40, offset: const Offset(0, 16))],
                 ),
-                // Original app icon — its red disc is already baked into
-                // the asset, so no extra tint/background is layered on top
-                // of it, just the white lift-off disc behind it.
-                padding: const EdgeInsets.all(20),
-                child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
+                // The app's own launcher icon (the outline heart+ECG ring
+                // a user already recognizes from their home screen)
+                // instead of the solid-filled logoMark — lifted onto this
+                // white disc rather than reusing the launcher's own white
+                // background square.
+                padding: const EdgeInsets.all(22),
+                child: Image.asset(AppAssets.logoLauncherMark, fit: BoxFit.contain),
               ),
               const SizedBox(height: 26),
               RichText(
