@@ -54,7 +54,10 @@ class PdfViewerView extends GetView<PdfViewerController> {
             );
           }),
           IconButton(icon: const Icon(Icons.ios_share), tooltip: 'Share', onPressed: controller.share),
-          IconButton(icon: const Icon(Icons.print_outlined), tooltip: 'Print', onPressed: controller.print),
+          // Hidden for now — not needed for this release, but keep the
+          // button and controller.print() ready to re-enable for a future
+          // version rather than deleting them.
+          // IconButton(icon: const Icon(Icons.print_outlined), tooltip: 'Print', onPressed: controller.print),
         ],
       ),
       body: Obx(() {
