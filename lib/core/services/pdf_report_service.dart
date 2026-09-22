@@ -42,7 +42,11 @@ class PdfReportService {
 
     doc.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        // The live app's report (`PdfGenerator`, `R.integer.report_page_width/
+        // height`) is landscape A4 (842x595pt) — matching this matters for
+        // printing/scanning into a patient file sized for that orientation,
+        // not just cosmetics.
+        pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.all(28),
         header: (context) => _buildLetterhead(storage),
         // Port of `PdfGenerator.generatePDF()`'s loop over
@@ -75,9 +79,14 @@ class PdfReportService {
     return file;
   }
 
-  /// Port of `PdfGenerator.getReportPage()`'s switch over reportType:
-  /// grid shape and column count come from the "NxM" name (6x2 → 2
-  /// columns of 6, 12x1 → 1 column of 12, else 3 columns of 4), and
+  /// Port of `PdfGenerator.getReportPage()`'s switch over reportType: grid
+  /// shape and column count come from the "NxM" name — 6x2 → 2 columns of 6,
+  /// 12x1 → 1 column of 12, else (4x3) → **4** columns of **3** — matching
+  /// `draw4x3Graphs()`'s `rows = 3` (fixed by the page's available height /
+  /// `y_boxes`), which groups leads I/II/III, aVR/aVL/aVF, V1/V2/V3,
+  /// V4/V5/V6 one clinical group per column. (An earlier version of this
+  /// port had this backwards — 3 columns of 4 — which split each column
+  /// across two different lead groups instead of keeping one per column.)
   /// "Simultaneous" vs "Sequential" decides whether every column shows the
   /// same time window or each one a later slice of the recording — same
   /// as the original's `data_start = simultaneous ? 0 : floor(ch/rows) *
@@ -101,8 +110,8 @@ class PdfReportService {
       columns = 1;
       rowsPerColumn = 12;
     } else {
-      columns = 3;
-      rowsPerColumn = 4;
+      columns = 4;
+      rowsPerColumn = 3;
     }
 
     return [
@@ -283,7 +292,11 @@ class PdfReportService {
           decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor, width: 0.5)),
           child: pw.Stack(children: [
             pw.Positioned(top: 2, left: 3, child: pw.Text(leadName, style: pw.TextStyle(fontSize: 6, color: _mutedColor))),
-            pw.Center(child: _tracePainter(samples, width: columns == 1 ? 500 : 150, height: cellHeight - 6)),
+            // Scaled to roughly fill each column's share of the (now
+            // landscape, so wider) page rather than a single width for
+            // every layout — a 4-column report's cells are narrower than a
+            // 2-column one's.
+            pw.Center(child: _tracePainter(samples, width: columns == 1 ? 700 : 720 / columns, height: cellHeight - 6)),
           ]),
         ));
       }
@@ -323,13 +336,40 @@ class PdfReportService {
     );
   }
 
+  /// Port of the original report's fixed bottom-of-page line — every page
+  /// carries "To be Finally Confirmed by the doctor" / "Software calculated
+  /// values. To be verified manually" regardless of report type, since the
+  /// values above (HR, QT, QTc, etc.) are device-computed, not a
+  /// cardiologist's read.
   static pw.Widget _buildCalibrationFooter(EcgRecordModel record, StorageService storage) {
     return pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
-        pw.Text('${storage.xAxisScale} mm/s · 10 mm/mV · ${record.filter}',
-            style: pw.TextStyle(fontSize: 8, color: _mutedColor)),
-        pw.Text('Gain: ${record.gain}', style: pw.TextStyle(fontSize: 8, color: _mutedColor)),
+        pw.Expanded(
+          child: pw.Text(
+            '${storage.xAxisScale} mm/s · 10 mm/mV · ${record.filter}',
+            style: pw.TextStyle(fontSize: 8, color: _mutedColor),
+          ),
+        ),
+        pw.Expanded(
+          child: pw.Column(
+            children: [
+              pw.Text(
+                'To be Finally Confirmed by the doctor',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: _inkColor),
+              ),
+              pw.Text(
+                'Software calculated values. To be verified manually',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(fontSize: 7, color: _mutedColor),
+              ),
+            ],
+          ),
+        ),
+        pw.Expanded(
+          child: pw.Text('Gain: ${record.gain}', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontSize: 8, color: _mutedColor)),
+        ),
       ],
     );
   }
