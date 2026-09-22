@@ -13,6 +13,14 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
 
+    <!-- Patient photo capture (Patient Details screen) — image_picker's
+         camera source. Gallery picking needs no runtime permission on
+         Android 13+ (system photo picker) and image_picker handles the
+         legacy READ_EXTERNAL_STORAGE request itself on older versions. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <application
         android:label="drcardio_flutter"
         android:name="${applicationName}"

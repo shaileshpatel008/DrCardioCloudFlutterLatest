@@ -51,5 +51,9 @@
 	<string>Dr. Cardio uses Bluetooth to connect to your portable ECG device and stream recordings.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location is used to tag where an ECG recording was taken and to enable Bluetooth device scanning.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Dr. Cardio uses the camera to take a patient's photo for their record and report.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Dr. Cardio needs access to your photo library to attach a patient photo or a signed form to a patient's record.</string>
 </dict>
 </plist>

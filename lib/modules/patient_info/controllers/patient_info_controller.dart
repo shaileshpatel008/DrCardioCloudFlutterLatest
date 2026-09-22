@@ -1,9 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/ecg/ecg_data.dart';
+import '../../../core/services/patient_media_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/patient_model.dart';
 import '../../../routes/app_routes.dart';
 import '../../live_ecg/controllers/live_ecg_controller.dart';
@@ -24,6 +30,12 @@ class PatientInfoController extends GetxController {
   /// "Male", since it's now a required field the clinician must actively
   /// choose rather than one that could silently go unnoticed.
   final RxnString gender = RxnString();
+
+  /// Empty string means "none captured" — the PDF report reserves no
+  /// space for either when empty, matching `PdfGenerator`'s own
+  /// non-empty-string check for `patient_photo`.
+  final RxString photoPath = ''.obs;
+  final RxString signaturePath = ''.obs;
 
   /// True when opened to edit a record already loaded elsewhere (Load
   /// Data's "change patient data" option), rather than for a fresh
@@ -47,6 +59,8 @@ class PatientInfoController extends GetxController {
       bpController.text = args.bloodPressure;
       medicationsController.text = args.medications;
       commentsController.text = args.comments;
+      photoPath.value = args.photoPath;
+      signaturePath.value = args.signaturePath;
       // Guards against a legacy/imported record whose stored sex isn't
       // exactly one of the dropdown's own options (e.g. different casing)
       // — feeding that straight into DropdownButtonFormField's value
@@ -59,6 +73,46 @@ class PatientInfoController extends GetxController {
   static const _genderOptions = ['Male', 'Female', 'Other'];
 
   void setGender(String value) => gender.value = value;
+
+  /// Port of `PatientData`'s `ImagePicker.with(this).cropSquare()...start()`
+  /// call for the photo `img_profile` tap — [source] is chosen by the
+  /// caller's action sheet (Take Photo / Choose from Gallery).
+  Future<void> pickPhoto(ImageSource source) async {
+    try {
+      final path = await PatientMediaService.pickPhoto(source);
+      if (path != null) photoPath.value = path;
+    } catch (e, st) {
+      AppLogger.e('Could not capture patient photo', e, st);
+      AppToast.error('Could not add photo. Please try again.');
+    }
+  }
+
+  void removePhoto() => photoPath.value = '';
+
+  /// Port of `PatientData`'s `rbFromGallery` signature mode.
+  Future<void> pickSignatureFromGallery() async {
+    try {
+      final path = await PatientMediaService.pickSignatureFromGallery();
+      if (path != null) signaturePath.value = path;
+    } catch (e, st) {
+      AppLogger.e('Could not pick signature image', e, st);
+      AppToast.error('Could not add signature. Please try again.');
+    }
+  }
+
+  /// Port of `PatientData`'s default `SilkySignaturePad` drawing mode —
+  /// called with the `signature` package's exported PNG bytes once the
+  /// user taps Save on the signature sheet.
+  Future<void> saveDrawnSignature(Uint8List pngBytes) async {
+    try {
+      signaturePath.value = await PatientMediaService.saveDrawnSignature(pngBytes);
+    } catch (e, st) {
+      AppLogger.e('Could not save drawn signature', e, st);
+      AppToast.error('Could not save signature. Please try again.');
+    }
+  }
+
+  void clearSignature() => signaturePath.value = '';
 
   void continueToRecording() {
     if (!formKey.currentState!.validate()) return;
@@ -73,6 +127,8 @@ class PatientInfoController extends GetxController {
       bloodPressure: bpController.text.trim(),
       medications: medicationsController.text.trim(),
       comments: commentsController.text.trim(),
+      photoPath: photoPath.value,
+      signaturePath: signaturePath.value,
     );
 
     if (isEditMode) {

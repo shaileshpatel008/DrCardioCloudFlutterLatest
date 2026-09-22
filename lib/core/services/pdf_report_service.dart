@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:pdf/pdf.dart';
@@ -30,6 +31,15 @@ class PdfReportService {
     final doc = pw.Document();
     final reportTypes = storage.reportTypes.isEmpty ? const ['Simultaneous 4x3'] : storage.reportTypes;
 
+    // Read once up front (the only async step) rather than per report-type
+    // page — every `_build*` method below stays synchronous. Port of
+    // `PdfGenerator`'s non-empty-string-checked `patient_photo`/
+    // `patient_signature_photo` draws: null here (empty path, or the file
+    // no longer exists) means the page reserves no space for it at all,
+    // not an empty box.
+    final photoImage = await _loadImage(record.patient.photoPath);
+    final signatureImage = await _loadImage(record.patient.signaturePath);
+
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -41,7 +51,7 @@ class PdfReportService {
         build: (context) => [
           for (var i = 0; i < reportTypes.length; i++) ...[
             if (i > 0) pw.NewPage(),
-            ..._buildReportPage(record, storage, reportTypes[i]),
+            ..._buildReportPage(record, storage, reportTypes[i], photoImage, signatureImage),
           ],
         ],
         footer: (context) => pw.Column(
@@ -74,7 +84,13 @@ class PdfReportService {
   /// graph_duration`. Only the 4x3 layouts get the extra full-width long
   /// lead strip, matching `draw4x3Graphs()`'s dedicated final row (6x2 and
   /// 12x1 have no equivalent in the original).
-  static List<pw.Widget> _buildReportPage(EcgRecordModel record, StorageService storage, String reportType) {
+  static List<pw.Widget> _buildReportPage(
+    EcgRecordModel record,
+    StorageService storage,
+    String reportType,
+    pw.MemoryImage? photoImage,
+    pw.MemoryImage? signatureImage,
+  ) {
     final simultaneous = reportType.startsWith('Simultaneous');
     final int columns;
     final int rowsPerColumn;
@@ -91,7 +107,7 @@ class PdfReportService {
 
     return [
       pw.SizedBox(height: 10),
-      _buildPatientInfoTable(record),
+      _buildPatientInfoTable(record, photoImage),
       pw.SizedBox(height: 14),
       pw.Text('12-LEAD ECG — ${reportType.toUpperCase()}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
       pw.SizedBox(height: 6),
@@ -101,6 +117,10 @@ class PdfReportService {
         pw.Text('RHYTHM STRIP — LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
         pw.SizedBox(height: 6),
         _buildRhythmStrip(record, storage.longLead),
+      ],
+      if (signatureImage != null) ...[
+        pw.SizedBox(height: 14),
+        _buildSignatureBlock(signatureImage),
       ],
       pw.SizedBox(height: 16),
       _buildCalibrationFooter(record, storage),
@@ -153,26 +173,91 @@ class PdfReportService {
         ),
       );
 
-  static pw.Widget _buildPatientInfoTable(EcgRecordModel record) {
+  static pw.Widget _buildPatientInfoTable(EcgRecordModel record, pw.MemoryImage? photoImage) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor), borderRadius: pw.BorderRadius.circular(6)),
-      child: pw.Column(
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Row(children: [
-            _infoField('PATIENT', record.patient.name),
-            _infoField('ID', record.patient.patientId),
-            _infoField('AGE / SEX', '${record.patient.age} / ${record.patient.sex}'),
-          ]),
-          pw.SizedBox(height: 8),
-          pw.Row(children: [
-            _infoField('RECORDED', _formatDate(record.dateTime)),
-            _infoField('DEVICE', record.deviceName.isEmpty ? '—' : record.deviceName),
-            _infoField('HEART RATE', record.hr.isEmpty ? '—' : '${record.hr} bpm'),
-          ]),
+          pw.Expanded(
+            child: pw.Column(
+              children: [
+                pw.Row(children: [
+                  _infoField('PATIENT', record.patient.name),
+                  _infoField('ID', record.patient.patientId),
+                  _infoField('AGE / SEX', '${record.patient.age} / ${record.patient.sex}'),
+                ]),
+                pw.SizedBox(height: 8),
+                pw.Row(children: [
+                  _infoField('RECORDED', _formatDate(record.dateTime)),
+                  _infoField('DEVICE', record.deviceName.isEmpty ? '—' : record.deviceName),
+                  _infoField('HEART RATE', record.hr.isEmpty ? '—' : '${record.hr} bpm'),
+                ]),
+              ],
+            ),
+          ),
+          // Port of `PdfGenerator.drawPatientPhotoInfo()` — a small
+          // passport-style thumbnail, only reserved when a photo was
+          // actually captured (see [_loadImage]'s null-on-missing rule).
+          if (photoImage != null) ...[
+            pw.SizedBox(width: 10),
+            pw.Container(
+              width: 42,
+              height: 42,
+              decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor, width: 0.6), borderRadius: pw.BorderRadius.circular(4)),
+              child: pw.ClipRRect(
+                horizontalRadius: 4,
+                verticalRadius: 4,
+                child: pw.Image(photoImage, fit: pw.BoxFit.cover),
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  /// Right-aligned signature line + caption, placed after the lead
+  /// grid/rhythm strip — port of `PdfGenerator.drawPatientSignatureInfo()`,
+  /// minus its "Patient Sign" caption being unconditional text unrelated to
+  /// whether an image was actually captured (a copy-paste leftover flagged
+  /// during research, not worth reproducing): here the whole block only
+  /// exists when [signatureImage] is non-null.
+  static pw.Widget _buildSignatureBlock(pw.MemoryImage signatureImage) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.end,
+      children: [
+        pw.Column(
+          children: [
+            pw.Container(
+              width: 100,
+              height: 30,
+              alignment: pw.Alignment.bottomCenter,
+              padding: const pw.EdgeInsets.only(bottom: 2),
+              decoration: pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: _borderColor, width: 0.8))),
+              child: pw.Image(signatureImage, fit: pw.BoxFit.contain, height: 26),
+            ),
+            pw.SizedBox(height: 3),
+            pw.Text('PATIENT SIGNATURE', style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: _mutedColor)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Empty path, missing file, or an unreadable one all resolve to null —
+  /// the caller treats null as "nothing to draw", not a placeholder.
+  static Future<pw.MemoryImage?> _loadImage(String path) async {
+    if (path.isEmpty) return null;
+    final file = File(path);
+    if (!await file.exists()) return null;
+    try {
+      final bytes = await file.readAsBytes();
+      return pw.MemoryImage(bytes);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// [columns]/[rowsPerColumn] shape the grid ([columns] * [rowsPerColumn]

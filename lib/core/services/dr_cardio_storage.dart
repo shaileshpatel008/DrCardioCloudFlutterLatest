@@ -47,4 +47,14 @@ class DrCardioStorage {
   /// Filtered/baseline-corrected `.csv` exports with a metadata header —
   /// `storage_sub_folders[3]`, port of `mFile.saveCsvFileWithFilter()`.
   static Future<Directory> filteredDataDir() => _folder('Filtered Data');
+
+  /// Patient photos, copied here at capture time rather than referenced by
+  /// their original OS gallery/camera path (the original app's approach,
+  /// and fragile — deleting the source photo from the gallery would break
+  /// report generation). Not part of the original's four folders since it
+  /// never had this feature; same root, new sub-folder.
+  static Future<Directory> photosDir() => _folder('Photos');
+
+  /// Patient signatures (drawn or uploaded), same rationale as [photosDir].
+  static Future<Directory> signaturesDir() => _folder('Signatures');
 }
