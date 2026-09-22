@@ -56,7 +56,6 @@ dependencies:
   # Networking / API sync.
   dio: ^5.7.0
   connectivity_plus: ^6.1.0
-  pretty_dio_logger: ^1.4.0
 
   # Local/offline persistence (recordings queue, cached report list).
   sqflite: ^2.4.1

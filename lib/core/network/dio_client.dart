@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 import '../constants/api_constants.dart';
 import '../services/storage_service.dart';
+import 'api_log_interceptor.dart';
 
 /// Thin Dio wrapper: base URL + bearer-token header (mirrors
 /// `VolleyMultipartRequest.getHeaders()`'s `Authorization: Bearer <token>`).
@@ -27,9 +27,10 @@ class DioClient {
         },
       ),
     );
-    _dio.interceptors.add(
-      PrettyDioLogger(requestBody: true, responseBody: true, compact: true),
-    );
+    // Logs every call's URL, request and response into AppLogger's
+    // persisted, shareable log file (see ApiLogInterceptor) — added last so
+    // it sees the Authorization header the interceptor above just attached.
+    _dio.interceptors.add(ApiLogInterceptor());
   }
 
   static final DioClient instance = DioClient._internal();
