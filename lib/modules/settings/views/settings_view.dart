@@ -15,6 +15,14 @@ class SettingsView extends GetView<SettingsController> {
       children: [
         Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 18),
+        const _SectionLabel('QUICK ACCESS'),
+        _QuickAccessGrid(items: [
+          _QuickAccessItem(icon: Icons.folder_open_outlined, label: 'Load Data', onTap: () => Get.toNamed(AppRoutes.loadData)),
+          _QuickAccessItem(icon: Icons.cloud_off_outlined, label: 'Offline Reports', onTap: () => Get.toNamed(AppRoutes.offlineReports)),
+          _QuickAccessItem(icon: Icons.person_outline, label: 'My Profile', onTap: () => Get.toNamed(AppRoutes.myProfile)),
+          _QuickAccessItem(icon: Icons.account_circle_outlined, label: 'My Account', onTap: () => Get.toNamed(AppRoutes.myAccount)),
+        ]),
+        const SizedBox(height: 18),
         const _SectionLabel('ACQUISITION MODE'),
         _Card(children: [
           Obx(() => _DropdownRow(
@@ -96,17 +104,6 @@ class SettingsView extends GetView<SettingsController> {
             style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
-        const SizedBox(height: 18),
-        const _SectionLabel('ACCOUNT'),
-        _Card(children: [
-          _NavRow(icon: Icons.person_outline, label: 'My Profile', onTap: () => Get.toNamed(AppRoutes.myProfile)),
-          const Divider(height: 1),
-          _NavRow(icon: Icons.folder_open_outlined, label: 'Load Data', onTap: () => Get.toNamed(AppRoutes.loadData)),
-          const Divider(height: 1),
-          _NavRow(icon: Icons.cloud_off_outlined, label: 'Manage Offline Reports', onTap: () => Get.toNamed(AppRoutes.offlineReports)),
-          const Divider(height: 1),
-          _NavRow(icon: Icons.account_circle_outlined, label: 'My Account', onTap: () => Get.toNamed(AppRoutes.myAccount)),
-        ]),
         const SizedBox(height: 18),
         const _SectionLabel('DIAGNOSTICS'),
         _Card(children: [
@@ -276,4 +273,73 @@ class _IconChip extends StatelessWidget {
         decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, size: 17, color: AppColors.brandRed),
       );
+}
+
+class _QuickAccessItem {
+  const _QuickAccessItem({required this.icon, required this.label, required this.onTap});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+}
+
+/// Pinned to the very top of Settings — Option A from the client mockup:
+/// Load Data, Manage Offline Reports, My Profile and My Account used to sit
+/// under an ACCOUNT section at the bottom of a long scroll; these are
+/// destinations clinicians reach for constantly (Load Data especially), not
+/// tunable preferences, so they get a shortcut grid up front instead.
+class _QuickAccessGrid extends StatelessWidget {
+  const _QuickAccessGrid({required this.items});
+  final List<_QuickAccessItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      childAspectRatio: 2.6,
+      children: items.map((item) => _QuickAccessTile(item: item)).toList(),
+    );
+  }
+}
+
+class _QuickAccessTile extends StatelessWidget {
+  const _QuickAccessTile({required this.item});
+  final _QuickAccessItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.brandRedTint,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: item.onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
+                child: Icon(item.icon, size: 15, color: AppColors.brandRed),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  item.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: AppColors.ink, height: 1.15),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
