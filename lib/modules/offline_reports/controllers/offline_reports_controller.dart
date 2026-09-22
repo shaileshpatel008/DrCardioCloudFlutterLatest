@@ -36,13 +36,41 @@ class OfflineReportsController extends GetxController {
       return;
     }
     isRetrying.value = true;
-    await _repository.syncPendingQueue();
+
+    // Looping over syncOne directly here (rather than the repository's own
+    // syncPendingQueue, which stays silent for its other caller — the
+    // reconnect-triggered background sync in main.dart) so this screen can
+    // show the server's actual error instead of leaving a failed retry
+    // unexplained.
+    String? lastFailure;
+    var alreadyUploadedCount = 0;
+    for (final record in List<EcgRecordModel>.from(pending)) {
+      if (!connectivity.isOnline.value) break;
+      final outcome = await _repository.syncOne(record);
+      if (outcome.alreadyUploaded) {
+        alreadyUploadedCount++;
+      } else if (!outcome.success) {
+        lastFailure = outcome.message;
+      }
+    }
+
     await reload();
     isRetrying.value = false;
+
+    if (lastFailure != null) {
+      AppToast.error(lastFailure, title: 'Upload failed');
+    } else if (alreadyUploadedCount > 0) {
+      AppToast.info('$alreadyUploadedCount report${alreadyUploadedCount == 1 ? '' : 's'} were already uploaded.');
+    }
   }
 
   Future<void> retryOne(EcgRecordModel record) async {
-    await _repository.syncOne(record);
+    final outcome = await _repository.syncOne(record);
     await reload();
+    if (outcome.alreadyUploaded) {
+      AppToast.info(outcome.message!);
+    } else if (!outcome.success) {
+      AppToast.error(outcome.message ?? 'Could not upload this report.', title: 'Upload failed');
+    }
   }
 }

@@ -42,21 +42,40 @@ class EcgRepository {
   /// just-finished recording, the reconnect-triggered background sync, a
   /// manual retry from Offline Reports — honors it without each one having
   /// to know to look it up. Pass it explicitly only to override that.
-  Future<bool> syncOne(EcgRecordModel record, {bool? autoAssignCardiologist}) async {
+  Future<SyncOutcome> syncOne(EcgRecordModel record, {bool? autoAssignCardiologist}) async {
     final assignFlag = autoAssignCardiologist ?? StorageService.instance.autoAssignCardiologist;
     try {
       await _remote.uploadReport(record: record, autoAssignCardiologist: assignFlag);
       await _local.updateSyncStatus(record.id, SyncStatus.synced);
-      return true;
+      return const SyncOutcome.success();
+    } on ApiStatusException catch (e) {
+      if (e.message.toLowerCase().contains('already uploaded')) {
+        // The server already has this exact record — most likely a prior
+        // upload that succeeded but never got as far as updating the local
+        // status (an app kill, or losing connectivity right after the
+        // response). Without this branch every retry, manual or the
+        // reconnect-triggered background sync, would keep failing with the
+        // same "ECG already uploaded" error forever, trapping the record in
+        // the offline queue with no way to clear it.
+        await _local.updateSyncStatus(record.id, SyncStatus.synced);
+        AppLogger.i('Report ${record.id} was already uploaded — marking synced locally.');
+        return const SyncOutcome.alreadyUploaded();
+      }
+      AppLogger.e('Failed to upload report ${record.id}', e);
+      await _local.updateSyncStatus(record.id, SyncStatus.failed);
+      return SyncOutcome.failure(e.message);
     } catch (e, st) {
       AppLogger.e('Failed to upload report ${record.id}', e, st);
       await _local.updateSyncStatus(record.id, SyncStatus.failed);
-      return false;
+      return const SyncOutcome.failure('Could not upload this report. Please check your connection and try again.');
     }
   }
 
   /// Drains the pending/failed queue one at a time while online, mirroring
   /// the original's recursive `sendOfflineECGDataToServer()` retry loop.
+  /// Silent by design (this also runs unattended after a reconnect, see
+  /// `main.dart`) — a screen driving a retry itself should call [syncOne]
+  /// directly instead, so it can surface each [SyncOutcome] to the user.
   Future<void> syncPendingQueue() async {
     final connectivity = Get.find<ConnectivityService>();
     if (!connectivity.isOnline.value) return;
@@ -104,4 +123,23 @@ class EcgRepository {
       AppLogger.w('Could not re-validate device $name after reconnect', e, st);
     }
   }
+}
+
+/// Result of a single [EcgRepository.syncOne] attempt — three cases a caller
+/// showing feedback needs to tell apart, not just pass/fail: a clean upload
+/// (no message to show at all), the server reporting this exact record was
+/// already uploaded (a synced success, but worth an informational note
+/// rather than a scary "failed" one), and a genuine failure whose [message]
+/// is the server's own `error_data` (e.g. "ECG already uploaded." would
+/// never reach here — it's the [alreadyUploaded] case instead).
+class SyncOutcome {
+  const SyncOutcome._(this.success, this.alreadyUploaded, this.message);
+
+  const SyncOutcome.success() : this._(true, false, null);
+  const SyncOutcome.alreadyUploaded() : this._(true, true, 'This report was already uploaded — marked as synced.');
+  const SyncOutcome.failure(String message) : this._(false, false, message);
+
+  final bool success;
+  final bool alreadyUploaded;
+  final String? message;
 }
