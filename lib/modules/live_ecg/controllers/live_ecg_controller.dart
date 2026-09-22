@@ -8,6 +8,7 @@ import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/csv_export_service.dart';
 import '../../../core/services/dat_file_service.dart';
+import '../../../core/services/ecg/ecg_analysis_service.dart';
 import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_engine.dart';
 import '../../../core/services/pdf_report_service.dart';
@@ -261,6 +262,19 @@ class LiveEcgController extends GetxController {
     final ecg = EcgData.instance;
     final storage = StorageService.instance;
     final position = await _tryGetLocation();
+
+    // Port of NewEcgActivity.generateReport()'s ECGAnalysis pass — must run
+    // here, against the live EcgData.filteredData buffer, and not later:
+    // that buffer is full-resolution (500Hz) and gets reset by the next
+    // recording, whereas the leadData saved below is down-sampled 10x for
+    // charting/storage and would give this algorithm the wrong sample rate.
+    final analysis = EcgAnalysisService.analyze(
+      filteredData: ecg.filteredData,
+      rawDataCount: ecg.rawDataCount,
+      leadArrange: EcgData.leadArrange,
+      valPerMv: ecg.valPerMv,
+    );
+
     return EcgRecordModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       dateTime: DateTime.now(),
@@ -272,7 +286,27 @@ class LiveEcgController extends GetxController {
       deviceId: storage.savedDeviceName,
       latitude: position?.latitude.toString() ?? '',
       longitude: position?.longitude.toString() ?? '',
+      hr: analysis == null ? '' : analysis.heartRateBpm.toString(),
+      r: analysis == null ? '' : _formatMeasurement(analysis.rAmplitudeMv),
+      rr: analysis == null ? '' : analysis.rrIntervalMs.toString(),
+      pr: analysis == null ? '' : analysis.prIntervalMs.toString(),
+      qrs: analysis == null ? '' : analysis.qrsDurationMs.toString(),
+      qt: analysis == null ? '' : analysis.qtIntervalMs.toString(),
+      qtc: analysis == null ? '' : analysis.qtcMs.toString(),
+      qtByQtc: analysis == null ? '' : _formatMeasurement(analysis.qtOverQtc),
     );
+  }
+
+  /// Matches `PdfGenerator.getEcgAnalysis()`'s `new DecimalFormat()` default
+  /// formatting for R(II) and QT/QTc — up to 2 fraction digits, trailing
+  /// zeros (and a trailing bare decimal point) trimmed.
+  static String _formatMeasurement(double value) {
+    var text = value.toStringAsFixed(2);
+    if (text.contains('.')) {
+      text = text.replaceFirst(RegExp(r'0+$'), '');
+      text = text.replaceFirst(RegExp(r'\.$'), '');
+    }
+    return text;
   }
 
   /// Best-effort location tag for the upload payload's latitude/longitude

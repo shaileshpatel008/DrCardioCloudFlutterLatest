@@ -114,9 +114,15 @@ class PdfReportService {
       rowsPerColumn = 3;
     }
 
+    final analysisStrip = _buildAnalysisStrip(record);
+
     return [
       pw.SizedBox(height: 10),
       _buildPatientInfoTable(record, photoImage),
+      if (analysisStrip != null) ...[
+        pw.SizedBox(height: 8),
+        analysisStrip,
+      ],
       pw.SizedBox(height: 14),
       pw.Text('12-LEAD ECG — ${reportType.toUpperCase()}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
       pw.SizedBox(height: 6),
@@ -223,6 +229,44 @@ class PdfReportService {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// Port of `PdfGenerator.getEcgAnalysis()`'s HR/R(II)/RR/PR/QRS/QT/QTc/
+  /// QT-QTc line — all eight figures the device computes from the
+  /// recording (via `EcgAnalysisService`, run once at save time). Omitted
+  /// entirely (not drawn as a row of dashes) when [EcgRecordModel.hr] is
+  /// empty — a recording under ~13s, or one saved before this measurement
+  /// existed, simply has nothing to show here rather than misleading blanks
+  /// dressed up as a table.
+  static pw.Widget? _buildAnalysisStrip(EcgRecordModel record) {
+    if (record.hr.isEmpty) return null;
+    final items = <MapEntry<String, String>>[
+      MapEntry('HR', '${record.hr}/min'),
+      MapEntry('R(II)', '${record.r}mV'),
+      MapEntry('RR', '${record.rr}ms'),
+      MapEntry('PR', '${record.pr}ms'),
+      MapEntry('QRS', '${record.qrs}ms'),
+      MapEntry('QT', '${record.qt}ms'),
+      MapEntry('QTc', '${record.qtc}ms'),
+      MapEntry('QT/QTc', record.qtByQtc),
+    ];
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: items
+            .map((e) => pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(e.key, style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: _mutedColor)),
+                    pw.SizedBox(height: 2),
+                    pw.Text(e.value, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _inkColor)),
+                  ],
+                ))
+            .toList(),
       ),
     );
   }
