@@ -70,15 +70,8 @@ class SettingsView extends GetView<SettingsController> {
               )),
           const Divider(height: 1),
           Obx(() => _SwitchRow(
-                icon: Icons.save_outlined,
-                label: 'Auto-save recordings',
-                value: controller.autoSave.value,
-                onChanged: controller.setAutoSave,
-              )),
-          const Divider(height: 1),
-          Obx(() => _SwitchRow(
                 icon: Icons.medical_information_outlined,
-                label: 'Auto-assign cardiologist',
+                label: 'Auto Sent to Reporting',
                 value: controller.autoAssignCardiologist.value,
                 onChanged: controller.setAutoAssignCardiologist,
               )),
