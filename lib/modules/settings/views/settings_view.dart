@@ -314,7 +314,9 @@ class _QuickAccessGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
-      childAspectRatio: 2.6,
+      // A bit shorter/wider before — grown to give the larger label text
+      // below room to sit on two lines without feeling cramped.
+      childAspectRatio: 2.3,
       children: items.map((item) => _QuickAccessTile(item: item)).toList(),
     );
   }
@@ -333,22 +335,25 @@ class _QuickAccessTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         onTap: item.onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9)),
-                child: Icon(item.icon, size: 15, color: AppColors.brandRed),
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                child: Icon(item.icon, size: 17, color: AppColors.brandRed),
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   item.label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: AppColors.ink, height: 1.15),
+                  // Was 11.5 — read as noticeably smaller than the rest of
+                  // the Settings screen for what's meant to be the most
+                  // prominent shortcut row on the page.
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink, height: 1.15),
                 ),
               ),
             ],
