@@ -18,6 +18,11 @@ class BleTransport implements EcgTransport {
   StreamSubscription<List<int>>? _notifySub;
   String? _deviceId;
   DeviceConnectionState _state = DeviceConnectionState.disconnected;
+  bool _connectedOnce = false;
+
+  final StreamController<void> _disconnectedController = StreamController<void>.broadcast();
+  @override
+  Stream<void> get onDisconnected => _disconnectedController.stream;
 
   QualifiedCharacteristic get _rxChar => QualifiedCharacteristic(
         serviceId: Uuid.parse(BtProtocol.bleServiceUuid),
@@ -58,6 +63,7 @@ class BleTransport implements EcgTransport {
   @override
   Future<void> connect(EcgDevice device) async {
     _deviceId = device.id;
+    _connectedOnce = false;
     final completer = Completer<void>();
     _connectionSub = _ble
         .connectToDevice(id: device.id, connectionTimeout: const Duration(seconds: 15))
@@ -90,13 +96,23 @@ class BleTransport implements EcgTransport {
           // real service to actually show up before declaring "connected",
           // retrying a few times since discovery can take a moment.
           await _waitForService(device.id);
+          _connectedOnce = true;
           if (!completer.isCompleted) completer.complete();
         } catch (e) {
           if (!completer.isCompleted) completer.completeError(e);
         }
       }
-      if (update.connectionState == DeviceConnectionState.disconnected && !completer.isCompleted) {
-        completer.completeError(StateError('Failed to connect to ${device.name}'));
+      if (update.connectionState == DeviceConnectionState.disconnected) {
+        if (!completer.isCompleted) {
+          completer.completeError(StateError('Failed to connect to ${device.name}'));
+        } else if (_connectedOnce) {
+          // A drop after we already declared this connection good (out of
+          // range, powered off, an OS-level GATT drop) — [input]'s stream
+          // isn't guaranteed to ever complete/error on its own for this,
+          // so this is the one reliable signal BluetoothService has that
+          // the device is actually gone.
+          _disconnectedController.add(null);
+        }
       }
     }, onError: (e) {
       if (!completer.isCompleted) completer.completeError(e);
@@ -135,6 +151,7 @@ class BleTransport implements EcgTransport {
 
   @override
   Future<void> disconnect() async {
+    _connectedOnce = false;
     await _notifySub?.cancel();
     await _connectionSub?.cancel();
     _state = DeviceConnectionState.disconnected;

@@ -25,6 +25,12 @@ class ClassicSppTransport implements EcgTransport {
   @override
   bool get isConnected => _connection?.isConnected ?? false;
 
+  // A closed RFCOMM socket reliably closes [input] (its `onDone` fires),
+  // unlike BLE's separate notification-stream/connection-state split —
+  // no extra signal needed here.
+  @override
+  Stream<void> get onDisconnected => const Stream.empty();
+
   Future<List<EcgDevice>> pairedDevices() async {
     final bonded = await _bt.getBondedDevices();
     return bonded

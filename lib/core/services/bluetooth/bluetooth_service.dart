@@ -26,6 +26,7 @@ class BluetoothService extends GetxService {
 
   final BtFrameParser frameParser = BtFrameParser();
   StreamSubscription<List<int>>? _inputSub;
+  StreamSubscription<void>? _disconnectSub;
 
   int _packetCount = 0;
   int dataByteCount = BtProtocol.dataBytesV1;
@@ -105,6 +106,17 @@ class BluetoothService extends GetxService {
           state.value = BtConnectionState.disconnected;
         },
       );
+      // Belt-and-braces alongside the above: a BLE notification stream can
+      // simply stop emitting on a mid-session disconnect without ever
+      // calling `onDone`/`onError` (its notification subscription and its
+      // connection-state tracking are two separate things under the hood),
+      // which would otherwise leave `state` stuck reporting `connected`
+      // long after the device is actually gone — see `EcgTransport
+      // .onDisconnected`'s doc comment.
+      await _disconnectSub?.cancel();
+      _disconnectSub = _active!.onDisconnected.listen((_) {
+        state.value = BtConnectionState.disconnected;
+      });
       state.value = BtConnectionState.connected;
       unawaited(checkHwVersion());
     } catch (e, st) {
@@ -151,9 +163,9 @@ class BluetoothService extends GetxService {
   /// ~2-second window the original waits, the v1 defaults set in
   /// [connect] stand.
   Future<void> checkHwVersion() async {
-    _write([BtProtocol.cmdVersionCheckA]);
-    _write([BtProtocol.cmdStop]);
-    _write([BtProtocol.cmdVersionCheckB]);
+    unawaited(_write([BtProtocol.cmdVersionCheckA]));
+    unawaited(_write([BtProtocol.cmdStop]));
+    unawaited(_write([BtProtocol.cmdVersionCheckB]));
     await Future.delayed(const Duration(seconds: 2));
   }
 
@@ -167,11 +179,12 @@ class BluetoothService extends GetxService {
       AppLogger.w('No gain command mapped for actualGain=$actualGain');
       return;
     }
-    _write([cmd]);
+    unawaited(_write([cmd]));
   }
 
   Future<void> disconnect() async {
     await _inputSub?.cancel();
+    await _disconnectSub?.cancel();
     await _active?.disconnect();
     connectedDeviceName.value = '';
     connectedDeviceId = '';
@@ -186,19 +199,36 @@ class BluetoothService extends GetxService {
     // and risks stalling firmware that waits for an ACK before continuing.
     final isBle = _active?.type == TransportType.ble;
     if (isBle || dataByteCount == BtProtocol.dataBytesV1 || _packetCount % 500 == 0) {
-      _write([ok ? BtProtocol.cmdAck : BtProtocol.cmdErr]);
+      unawaited(_write([ok ? BtProtocol.cmdAck : BtProtocol.cmdErr]));
     }
   }
 
-  void _write(List<int> bytes) => _active?.write(bytes);
+  /// Was fire-and-forget (`_active?.write(bytes)` with the returned Future
+  /// discarded) — any failure from the transport (a dead classic-SPP
+  /// socket, a BLE characteristic write rejected because the GATT
+  /// connection had actually dropped) became an unhandled Future error
+  /// nobody ever saw, and the caller had no way to tell a write actually
+  /// reached the device from one that silently vanished. [sendStart]/
+  /// [sendTestStart] need that distinction to warn the user instead of
+  /// leaving the UI showing "recording" while nothing is happening.
+  Future<bool> _write(List<int> bytes) async {
+    try {
+      await _active?.write(bytes);
+      return true;
+    } catch (e, st) {
+      AppLogger.e('Bluetooth write failed (transport=${_active?.type})', e, st);
+      return false;
+    }
+  }
 
-  void sendStart() => _write([BtProtocol.cmdStart]);
-  void sendTestStart() => _write([BtProtocol.cmdTestStart]);
-  void sendStop() => _write([BtProtocol.cmdStop]);
+  Future<bool> sendStart() => _write([BtProtocol.cmdStart]);
+  Future<bool> sendTestStart() => _write([BtProtocol.cmdTestStart]);
+  void sendStop() => unawaited(_write([BtProtocol.cmdStop]));
 
   @override
   void onClose() {
     _inputSub?.cancel();
+    _disconnectSub?.cancel();
     frameParser.dispose();
     super.onClose();
   }

@@ -199,15 +199,26 @@ class LiveEcgController extends GetxController {
     }
   }
 
-  void startRecording() {
+  /// Port of `NewEcgActivity.startReading()`'s connection guard
+  /// (`appbt.conn == null || !appbt.conn.isAlive()` -> toast + abort
+  /// instead of proceeding): without it, a connection that dropped after
+  /// this screen opened (or a write the transport silently rejected) left
+  /// this screen showing "recording" — Stop lit, Start dimmed — while no
+  /// data ever arrived, with no indication anything had gone wrong.
+  Future<void> startRecording() async {
+    if (bluetoothService.state.value != BtConnectionState.connected) {
+      AppToast.error('Error communicating to the device. Please go back and connect again.', title: 'Not Connected');
+      return;
+    }
     EcgData.instance.isReading = true;
     isReading.value = true;
     elapsedSeconds.value = 0;
     engine.resetHeartRate();
-    if (isTestMode) {
-      bluetoothService.sendTestStart();
-    } else {
-      bluetoothService.sendStart();
+    final sent = isTestMode ? await bluetoothService.sendTestStart() : await bluetoothService.sendStart();
+    if (!sent) {
+      EcgData.instance.isReading = false;
+      isReading.value = false;
+      AppToast.error('Error communicating to the device. Please go back and connect again.', title: 'Not Connected');
     }
   }
 
