@@ -43,6 +43,25 @@ class SettingsView extends GetView<SettingsController> {
               )),
         ),
         const SizedBox(height: 18),
+        const _SectionLabel('WORKFLOW'),
+        _Card(children: [
+          Obx(() => _SwitchRow(
+                icon: Icons.swap_vert,
+                label: 'Patient info before recording',
+                value: controller.patientInfoFirst.value,
+                onChanged: controller.setPatientInfoFirst,
+              )),
+        ]),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+          child: Obx(() => Text(
+                controller.patientInfoFirst.value
+                    ? 'On: fill in patient details, then record. Turn off to record first and enter patient details afterward, right before the report is generated.'
+                    : 'Off: start recording right away; patient details are collected afterward, right before the report is generated.',
+                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
+              )),
+        ),
+        const SizedBox(height: 18),
         const _SectionLabel('SIGNAL PROCESSING'),
         _Card(children: [
           Obx(() => _DropdownRow(

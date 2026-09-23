@@ -47,6 +47,11 @@ class SettingsController extends GetxController {
   final RxBool testMode = false.obs;
   final RxString longLead = ''.obs;
 
+  /// See `StorageService.patientInfoFirst` — true (default) is this port's
+  /// own Patient Info -> Live ECG order, false switches to the original
+  /// app's Live ECG -> Patient Info order.
+  final RxBool patientInfoFirst = true.obs;
+
   /// Multi-select, matching `settings.reports` — one PDF page is generated
   /// per selected type. Defaults to just 'Simultaneous 4x3' (`reports[0]
   /// = true` default), same as the original.
@@ -62,6 +67,7 @@ class SettingsController extends GetxController {
     xAxisScale.value = storage.xAxisScale;
     testMode.value = storage.testMode;
     longLead.value = longLeadOptions.contains(storage.longLead) ? storage.longLead : 'II';
+    patientInfoFirst.value = storage.patientInfoFirst;
     final savedTypes = storage.reportTypes.where(reportTypeOptions.contains).toList();
     reportTypes.assignAll(savedTypes.isEmpty ? ['Simultaneous 4x3'] : savedTypes);
   }
@@ -112,6 +118,11 @@ class SettingsController extends GetxController {
     if (updated.isEmpty) return;
     reportTypes.assignAll(updated);
     storage.reportTypes = updated;
+  }
+
+  void setPatientInfoFirst(bool value) {
+    patientInfoFirst.value = value;
+    storage.patientInfoFirst = value;
   }
 
   /// [value] is the display label ('ECG'/'Test'), not the stored bool —

@@ -50,6 +50,13 @@ class LiveEcgController extends GetxController {
   EcgRecordModel? loadedRecord;
   bool get isLoadedMode => loadedRecord != null;
 
+  /// True when this screen was opened directly from Home with no patient
+  /// yet (Settings' "Patient info before recording" off — the original
+  /// app's own order) — [patient] holds an empty placeholder until
+  /// [saveAndExit] collects the real one right before generating the
+  /// report, matching `NewEcgActivity`'s `openPatientFormToGenerateReport`.
+  bool _patientPending = false;
+
   final RxInt elapsedSeconds = 0.obs;
   final RxBool isReading = false.obs;
   final RxBool isSaving = false.obs;
@@ -97,7 +104,8 @@ class LiveEcgController extends GetxController {
       patient = args.patient.obs;
       _loadIntoChart(args);
     } else {
-      patient = (args as PatientModel).obs;
+      _patientPending = args is! PatientModel;
+      patient = (_patientPending ? _emptyPatient() : args as PatientModel).obs;
       // Port of `NewEcgActivity.checkFromLoadData()`'s fresh-recording
       // branch, which calls `setGain(settings.gain)` — both telling the
       // device which hardware gain to use for this session (it doesn't
@@ -106,7 +114,29 @@ class LiveEcgController extends GetxController {
       EcgData.instance.graphScale = double.tryParse(storage.gain) ?? 1;
       final actualGain = int.tryParse(storage.actualGain);
       if (actualGain != null) bluetoothService.sendGain(actualGain);
+
+      if (_patientPending) {
+        // Normally PatientInfoController.continueToRecording() resets and
+        // sizes the acquisition buffers right before navigating here; with
+        // Settings' "Patient info before recording" off, this screen is
+        // opened directly instead, so it has to do that setup itself.
+        final ecg = EcgData.instance;
+        ecg.resetEcgData();
+        ecg.initDataWithLength(maxReadSeconds: 300);
+        ecg.deviceName = bluetoothService.connectedDeviceName.value;
+      }
     }
+  }
+
+  static PatientModel _emptyPatient() => PatientModel(patientId: '', name: '', age: '', sex: '');
+
+  /// Called by `PatientInfoController` (edit-mode branch) once the user
+  /// submits — covers both the plain mid-recording "Patient" edit and, when
+  /// [_patientPending] was true, the post-recording collection [saveAndExit]
+  /// is awaiting.
+  void setPatient(PatientModel value) {
+    patient.value = value;
+    _patientPending = false;
   }
 
   /// Port of `ecgData.parseInfo()`/`mFile.readDatFile()`'s chart-filling
@@ -206,7 +236,21 @@ class LiveEcgController extends GetxController {
     if (actualGain != null) bluetoothService.sendGain(actualGain);
   }
 
+  /// Port of `NewEcgActivity`'s `fab_generate_report` handler: generates
+  /// straight away when the patient is already known, otherwise opens
+  /// Patient Info first (`openPatientForm()` /
+  /// `openPatientFormToGenerateReport = true`) and only proceeds once that
+  /// comes back with a name — `PatientInfoController.setPatient()` clears
+  /// [_patientPending] and pops back, which is what this `await` resumes
+  /// on. Backing out of that form without submitting leaves
+  /// [_patientPending] true, so this aborts instead of generating a report
+  /// for an unnamed patient — the recording itself is untouched either way,
+  /// so Save can just be tapped again.
   Future<void> saveAndExit() async {
+    if (_patientPending) {
+      await Get.toNamed(AppRoutes.patientInfo, arguments: patient.value);
+      if (_patientPending) return;
+    }
     isSaving.value = true;
     try {
       var record = await _buildRecordToSave();

@@ -62,6 +62,17 @@ class StorageService {
   bool get testMode => _box.read('settings_test_mode') ?? false;
   set testMode(bool v) => _box.write('settings_test_mode', v);
 
+  /// New-app-only setting (no equivalent pref in the original, which
+  /// always went device-connect -> Live ECG -> Patient Info -> Report).
+  /// True (default) keeps this port's own Patient Info -> Live ECG order;
+  /// false switches to the original's order for clients who specifically
+  /// want it. Read by `HomeController.startNewEcg()` (which screen opens
+  /// first) and `LiveEcgController` (whether it needs to collect patient
+  /// info itself, right before generating the report, instead of already
+  /// having it on entry).
+  bool get patientInfoFirst => _box.read('settings_patient_info_first') ?? true;
+  set patientInfoFirst(bool v) => _box.write('settings_patient_info_first', v);
+
   // --- Report-limit / plan quota (from api/get-token) ---
   bool get reportLimitEnabled => _box.read('reportLimitEnabled') ?? false;
   set reportLimitEnabled(bool v) => _box.write('reportLimitEnabled', v);

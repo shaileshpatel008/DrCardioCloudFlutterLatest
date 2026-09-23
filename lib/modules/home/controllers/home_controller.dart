@@ -151,11 +151,16 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     await Get.toNamed(AppRoutes.deviceScan);
   }
 
+  /// Which screen opens first is a Settings toggle (`patientInfoFirst`) —
+  /// the original always went straight to Live ECG and collected patient
+  /// info afterward, right before generating the report; this port's own
+  /// default flips that order (Patient Info first), so this only takes the
+  /// original's path when a client has explicitly asked to switch back.
   void startNewEcg() {
     if (bluetoothService.state.value != BtConnectionState.connected) {
       AppToast.warning('Connect to the ECG device first.', title: 'Not connected');
       return;
     }
-    Get.toNamed(AppRoutes.patientInfo);
+    Get.toNamed(storage.patientInfoFirst ? AppRoutes.patientInfo : AppRoutes.liveEcg);
   }
 }

@@ -135,10 +135,15 @@ class PatientInfoController extends GetxController {
       // Writing straight into the caller's controller (same proven
       // Get.find<T>() pattern used throughout this app) rather than
       // returning a typed result through Get.back()/Get.toNamed<T>() —
-      // this screen is only ever pushed on top of Live ECG for editing,
-      // so it's still alive and registered underneath.
+      // this screen is only ever pushed on top of Live ECG for editing
+      // (including, when Settings' "Patient info before recording" is
+      // off, being pushed by LiveEcgController.saveAndExit() to collect
+      // the patient it doesn't have yet), so it's still alive and
+      // registered underneath. setPatient() also clears
+      // LiveEcgController's "patient still pending" flag, which is what
+      // lets a save that was waiting on this screen proceed once it pops.
       if (Get.isRegistered<LiveEcgController>()) {
-        Get.find<LiveEcgController>().patient.value = patient;
+        Get.find<LiveEcgController>().setPatient(patient);
       }
       Get.back();
       return;

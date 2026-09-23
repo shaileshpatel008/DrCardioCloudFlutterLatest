@@ -51,17 +51,29 @@ class LiveEcgView extends GetView<LiveEcgController> {
                     ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Obx(() => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(controller.patient.value.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-                        Text('ID ${controller.patient.value.patientId} · ${controller.patient.value.age} / ${controller.patient.value.sex}',
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600)),
-                      ],
-                    )),
+                    child: Obx(() {
+                      // Empty when opened via Settings' "Patient info
+                      // before recording" off — the patient is collected
+                      // after Stop/Save instead of before this screen ever
+                      // opens, so there's nothing to show here yet.
+                      final name = controller.patient.value.name;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name.isEmpty ? 'New Recording' : name,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                          if (name.isNotEmpty)
+                            Text('ID ${controller.patient.value.patientId} · ${controller.patient.value.age} / ${controller.patient.value.sex}',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600))
+                          else
+                            const Text('Patient details added after saving',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600)),
+                        ],
+                      );
+                    }),
                   ),
                   const SizedBox(width: 6),
                   if (controller.isLoadedMode)
