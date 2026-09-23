@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/app_logger.dart';
@@ -16,7 +17,7 @@ import '../../../routes/app_routes.dart';
 /// affordance when nothing is connected, highlighted once a device is),
 /// and the bottom navigation between New ECG / Reports / Help / Settings
 /// — matching `act_menu_new.xml`'s real tab set (not a generic "Home").
-class HomeController extends GetxController {
+class HomeController extends GetxController with WidgetsBindingObserver {
   HomeController({EcgRepository? ecgRepository, AuthRepository? authRepository})
       : _ecgRepository = ecgRepository ?? EcgRepository(),
         _authRepository = authRepository ?? AuthRepository();
@@ -44,8 +45,10 @@ class HomeController extends GetxController {
   /// Port of `MainActivity`'s "ECG Left" plan-count badge
   /// (`layout_plan_count`/`tvCount`), seeded from whatever `login()` last
   /// persisted so the badge doesn't flash hidden-then-shown, then
-  /// refreshed from `api/get-token` on every dashboard load exactly like
-  /// `callGetLatestTokenApi()` (called from `MainActivity.onCreate()`).
+  /// refreshed from `api/get-token` every time Home becomes current again
+  /// — see [didChangeAppLifecycleState] — matching `callGetLatestTokenApi()`
+  /// (called from `MainActivity.onResume()`, which fires on every return to
+  /// the foreground, not just once at launch).
   final RxBool reportLimitEnabled = false.obs;
   final RxInt reportLimit = 0.obs;
 
@@ -66,7 +69,37 @@ class HomeController extends GetxController {
     // therefore won't show up in a fresh scan.
     bluetoothService.autoReconnectIfNeeded();
     ever(bluetoothService.state, (_) {});
-    ever(connectivity.isOnline, (_) => _refreshRecentRecords());
+    ever(connectivity.isOnline, (_) {
+      _refreshRecentRecords();
+      _refreshReportLimit();
+    });
+
+    // This controller is created once per login (Get.offAllNamed on
+    // login/logout) and then lives for the rest of the session — every
+    // other screen is pushed on top of Home rather than replacing it, so
+    // onInit() above only ever runs once. The original re-hits
+    // api/get-token on every single MainActivity.onResume() (app reopened,
+    // returned from background, unlocked, etc.), which is what actually
+    // keeps its token from going stale over a long session. Without this
+    // observer, this port's token/report-limit/recent-records only ever
+    // refreshed at login, so API calls could start failing hours into a
+    // session with no obvious cause short of logging out and back in.
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPendingCount();
+      _refreshRecentRecords();
+      _refreshReportLimit();
+    }
   }
 
   void changeTab(int index) => tabIndex.value = index;
