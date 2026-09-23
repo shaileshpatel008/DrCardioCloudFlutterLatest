@@ -40,6 +40,7 @@ class DeviceScanView extends GetView<DeviceScanController> {
                     itemBuilder: (context, index) {
                       final device = controller.devices[index];
                       final connecting = controller.connectingId.value == device.id;
+                      final isConnected = controller.isCurrentlyConnected(device);
                       // Any connection attempt in progress locks the whole
                       // list, not just the tapped row — tapping a different
                       // device mid-connect would otherwise race two
@@ -54,7 +55,10 @@ class DeviceScanView extends GetView<DeviceScanController> {
                           child: Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              border: Border.all(color: connecting ? AppColors.brandRed : AppColors.border, width: connecting ? 1.5 : 1),
+                              border: Border.all(
+                                color: isConnected ? AppColors.success : (connecting ? AppColors.brandRed : AppColors.border),
+                                width: isConnected || connecting ? 1.5 : 1,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -63,7 +67,7 @@ class DeviceScanView extends GetView<DeviceScanController> {
                                   width: 42,
                                   height: 42,
                                   decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(12)),
-                                  child: const Icon(Icons.bluetooth, color: AppColors.brandRed),
+                                  child: Icon(isConnected ? Icons.bluetooth_connected : Icons.bluetooth, color: AppColors.brandRed),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -73,10 +77,14 @@ class DeviceScanView extends GetView<DeviceScanController> {
                                       Text(device.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                                       const SizedBox(height: 2),
                                       Text(
-                                        connecting ? 'Connecting…' : (device.isBonded ? 'Previously paired' : 'Available'),
+                                        isConnected
+                                            ? 'Connected'
+                                            : connecting
+                                                ? 'Connecting…'
+                                                : (device.isBonded ? 'Previously paired' : 'Available'),
                                         style: TextStyle(
-                                          color: connecting ? AppColors.brandRed : AppColors.muted2,
-                                          fontWeight: connecting ? FontWeight.w700 : FontWeight.w600,
+                                          color: isConnected ? AppColors.success : (connecting ? AppColors.brandRed : AppColors.muted2),
+                                          fontWeight: isConnected || connecting ? FontWeight.w700 : FontWeight.w600,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -85,6 +93,8 @@ class DeviceScanView extends GetView<DeviceScanController> {
                                 ),
                                 if (connecting)
                                   const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
+                                else if (isConnected)
+                                  const Icon(Icons.check_circle, color: AppColors.success, size: 20)
                                 else
                                   const Icon(Icons.chevron_right, color: AppColors.muted2, size: 17),
                               ],

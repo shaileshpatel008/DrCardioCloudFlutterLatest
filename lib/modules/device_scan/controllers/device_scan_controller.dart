@@ -42,6 +42,22 @@ class DeviceScanController extends GetxController {
     error.value = null;
     devices.clear();
 
+    // A device already connected (from a previous visit to this screen, or
+    // an auto-reconnect on app launch) stops advertising, so a fresh scan
+    // will never find it — leaving the user staring at a list that acts
+    // like the device isn't there at all, with no way to tell it apart
+    // from "not connected". Surface it up front instead, straight from
+    // BluetoothService's own state rather than waiting on discovery.
+    if (bluetoothService.state.value == BtConnectionState.connected && bluetoothService.connectedDeviceId.isNotEmpty) {
+      final storage = StorageService.instance;
+      devices.add(EcgDevice(
+        id: bluetoothService.connectedDeviceId,
+        name: bluetoothService.connectedDeviceName.value,
+        isBonded: true,
+        transport: storage.savedDeviceTransport == TransportType.classicSpp.name ? TransportType.classicSpp : TransportType.ble,
+      ));
+    }
+
     try {
       if (Platform.isAndroid) {
         await [Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse].request();
@@ -50,7 +66,7 @@ class DeviceScanController extends GetxController {
       }
 
       final paired = await bluetoothService.pairedDevices();
-      devices.addAll(paired);
+      devices.addAll(paired.where((d) => devices.every((existing) => existing.id != d.id)));
 
       isScanning.value = true;
       _scanSub = bluetoothService.scan().listen(
@@ -92,7 +108,18 @@ class DeviceScanController extends GetxController {
     isScanning.value = false;
   }
 
+  bool isCurrentlyConnected(EcgDevice device) =>
+      bluetoothService.state.value == BtConnectionState.connected && bluetoothService.connectedDeviceId == device.id;
+
   Future<void> connect(EcgDevice device) async {
+    // Already connected (this is the row injected in startScan() for a
+    // device that stopped advertising once connected) — nothing to do,
+    // and re-running connect() against a live connection would only race
+    // it. Just hand it back to whoever pushed this screen.
+    if (isCurrentlyConnected(device)) {
+      Get.back(result: device);
+      return;
+    }
     connectingId.value = device.id;
     try {
       await bluetoothService.connect(device);

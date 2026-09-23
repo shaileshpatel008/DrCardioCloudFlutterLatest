@@ -64,11 +64,26 @@ class BluetoothService extends GetxService {
     await ble.stopScan();
   }
 
+  /// Upper bound on a single connection attempt. Without this, a native
+  /// socket/GATT call that never resolves (observed when the OS/peripheral
+  /// already considers the device connected from a previous attempt this
+  /// app lost track of — e.g. after a hot-restart or a killed process)
+  /// leaves [state] stuck at `connecting` forever: the `catch` block below
+  /// that resets it to `disconnected` never runs because nothing ever
+  /// throws or completes. That, in turn, permanently blocks
+  /// [autoReconnectIfNeeded] (which only acts when `disconnected`) and
+  /// makes `HomeController.startNewEcg()` show its "trying to connect…"
+  /// toast forever with no way to recover short of killing the app.
+  static const _connectTimeout = Duration(seconds: 20);
+
   Future<void> connect(EcgDevice device) async {
     state.value = BtConnectionState.connecting;
     try {
       _active = device.transport == TransportType.ble ? ble : classicSpp;
-      await _active!.connect(device);
+      await _active!.connect(device).timeout(
+            _connectTimeout,
+            onTimeout: () => throw TimeoutException('Connecting to ${device.name} timed out'),
+          );
       connectedDeviceName.value = device.name;
       connectedDeviceId = device.id;
       _packetCount = 0;

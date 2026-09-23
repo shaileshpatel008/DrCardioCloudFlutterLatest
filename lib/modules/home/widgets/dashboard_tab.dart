@@ -32,6 +32,12 @@ class DashboardTab extends GetView<HomeController> {
     return Obx(() {
       final state = controller.bluetoothService.state.value;
       final connected = state == BtConnectionState.connected;
+      // Distinguished from "disconnected" so a connection attempt in
+      // progress reads as "Connecting…" instead of the misleading "No
+      // device connected" — a connect() call can legitimately take a few
+      // seconds (bonding, service discovery), and lumping it in with
+      // "disconnected" made it look like nothing was happening at all.
+      final connecting = state == BtConnectionState.connecting;
       // Registered alongside HomeController under the same HomeBinding, so
       // it's already alive by the time this tab renders.
       final isTestMode = Get.find<SettingsController>().testMode.value;
@@ -81,7 +87,10 @@ class DashboardTab extends GetView<HomeController> {
             borderRadius: BorderRadius.circular(20),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: controller.connectDevice,
+              // While a connection attempt is already in flight, opening
+              // Device Scan again would let a second connect() race the
+              // first one against the same BluetoothService.
+              onTap: connecting ? null : controller.connectDevice,
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -90,13 +99,37 @@ class DashboardTab extends GetView<HomeController> {
                   // (green) instead of needing to read the "DEVICE
                   // CONNECTED" label — background stays plain white either
                   // way, so it never competes with the red CTA below it.
-                  border: Border.all(color: connected ? AppColors.success : AppColors.border, width: connected ? 1.6 : 1),
-                  boxShadow: connected
+                  border: Border.all(
+                    color: connected ? AppColors.success : (connecting ? AppColors.brandRed : AppColors.border),
+                    width: connected || connecting ? 1.6 : 1,
+                  ),
+                  boxShadow: connected || connecting
                       ? [BoxShadow(color: AppColors.ink.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 2))]
                       : null,
                 ),
-                child: connected
-                    ? Column(
+                child: connecting
+                    ? Row(
+                        children: [
+                          const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.brandRed),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Connecting…', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink)),
+                                SizedBox(height: 2),
+                                Text('Reaching your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : connected
+                        ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
