@@ -26,7 +26,7 @@ class MyAccountView extends GetView<MyAccountController> {
                 backgroundColor: AppColors.brandRed,
                 child: Text(
                   _initials(controller.storage.userName),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
                 ),
               ),
               const SizedBox(width: 14),
@@ -34,9 +34,9 @@ class MyAccountView extends GetView<MyAccountController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(controller.storage.userName, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppColors.ink)),
+                    Text(controller.storage.userName, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700, color: AppColors.ink)),
                     const SizedBox(height: 2),
-                    Text(controller.storage.userEmail, style: const TextStyle(color: AppColors.muted2, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    Text(controller.storage.userEmail, style: const TextStyle(color: AppColors.muted2, fontSize: 12.5, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -58,7 +58,7 @@ class MyAccountView extends GetView<MyAccountController> {
           const SizedBox(height: 18),
           Obx(() => Text(
                 'Dr. Cardio ${controller.appVersion.value} · Kavitul Technologies Pvt. Ltd.',
-                style: const TextStyle(color: AppColors.placeholder, fontSize: 11.5, fontWeight: FontWeight.w600),
+                style: const TextStyle(color: AppColors.placeholder, fontSize: 11.5, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
               )),
         ],
@@ -114,7 +114,7 @@ class _Row extends StatelessWidget {
             decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(11)),
             child: Icon(icon, size: 17, color: AppColors.brandRed),
           ),
-          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
           trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
         ),
         if (!isLast) const Divider(height: 1, indent: 16, endIndent: 16),

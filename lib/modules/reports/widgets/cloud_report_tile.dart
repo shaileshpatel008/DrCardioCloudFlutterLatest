@@ -64,11 +64,11 @@ class CloudReportTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(parsed.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                        Text(parsed.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                         const SizedBox(height: 2),
                         Text(
                           parsed.dateTime != null ? DateFormat('d MMM, h:mm a').format(parsed.dateTime!) : 'From your account',
-                          style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w500),
                         ),
                       ],
                     ),
@@ -133,7 +133,7 @@ class CloudReportTile extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 assigning ? 'Sending…' : 'Send to Cardiologist',
-                                style: const TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w700),
+                                style: const TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -181,7 +181,7 @@ class _CloudStatusBadge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-        child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.w700)),
+        child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.w600)),
       ),
     );
   }

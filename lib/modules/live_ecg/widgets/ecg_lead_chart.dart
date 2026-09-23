@@ -39,7 +39,7 @@ class EcgLeadChart extends StatelessWidget {
                 style: const TextStyle(
                   color: AppColors.monitorTrace,
                   fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

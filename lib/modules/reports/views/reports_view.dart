@@ -212,11 +212,11 @@ class ReportsView extends GetView<ReportsController> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Filters', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    const Text('Filters', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                     Obx(() => controller.hasActiveFilters
                         ? TextButton(
                             onPressed: controller.clearFilters,
-                            child: const Text('Clear all', style: TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700)),
+                            child: const Text('Clear all', style: TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600)),
                           )
                         : const SizedBox.shrink()),
                   ],
@@ -237,7 +237,7 @@ class ReportsView extends GetView<ReportsController> {
                         selected: selected,
                         onSelected: (_) => online ? controller.setCloudStatusFilter(o) : controller.setFilter(o),
                         selectedColor: AppColors.brandRed,
-                        labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
+                        labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w600, fontSize: 12.5),
                         backgroundColor: AppColors.surface,
                         side: const BorderSide(color: AppColors.border),
                       );
@@ -270,7 +270,7 @@ class ReportsView extends GetView<ReportsController> {
       selected: selected,
       onSelected: (_) => controller.setDateFilter(preset),
       selectedColor: AppColors.brandRed,
-      labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
+      labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w600, fontSize: 12.5),
       backgroundColor: AppColors.surface,
       side: const BorderSide(color: AppColors.border),
     );
@@ -293,7 +293,7 @@ class ReportsView extends GetView<ReportsController> {
         if (range != null) controller.setCustomDateRange(range);
       },
       selectedColor: AppColors.brandRed,
-      labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
+      labelStyle: TextStyle(color: selected ? Colors.white : AppColors.muted, fontWeight: FontWeight.w600, fontSize: 12.5),
       backgroundColor: AppColors.surface,
       side: const BorderSide(color: AppColors.border),
     );
@@ -306,7 +306,7 @@ class _SheetLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
+        child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 0.4)),
       );
 }
 
@@ -323,7 +323,7 @@ class _ActiveFilterChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700, fontSize: 12)),
+          Text(label, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600, fontSize: 12)),
           InkWell(
             borderRadius: BorderRadius.circular(999),
             onTap: onClear,

@@ -31,7 +31,7 @@ class LoadDataView extends GetView<LoadDataController> {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text('${controller.records.length} recordings stored on this device',
-                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               )),
           const SizedBox(height: 8),
@@ -56,10 +56,10 @@ class LoadDataView extends GetView<LoadDataController> {
                       decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(10)),
                       child: const Icon(Icons.description_outlined, color: AppColors.brandRed, size: 18),
                     ),
-                    title: Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                    title: Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     subtitle: Text(
                       '${record.patient.patientId} · ${DateFormat('d MMM, h:mm a').format(record.dateTime)}',
-                      style: const TextStyle(color: AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w600),
+                      style: const TextStyle(color: AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w500),
                     ),
                     trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
                     // Port of `LoadDataActivity`'s item click: opens the

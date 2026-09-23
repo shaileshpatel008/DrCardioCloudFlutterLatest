@@ -46,12 +46,12 @@ class AppConfirmSheet {
               ),
               Icon(icon, size: 34, color: confirmColor),
               const SizedBox(height: 16),
-              Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.ink)),
+              Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.ink)),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.muted, height: 1.4),
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w400, color: AppColors.muted, height: 1.4),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -65,7 +65,7 @@ class AppConfirmSheet {
                   ),
                   child: Text(
                     confirmText.toUpperCase(),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
                   ),
                 ),
               ),
@@ -73,7 +73,7 @@ class AppConfirmSheet {
                 const SizedBox(height: 4),
                 TextButton(
                   onPressed: () => Navigator.of(sheetContext).pop(false),
-                  child: Text(cancelText, style: const TextStyle(color: AppColors.muted, fontSize: 14, fontWeight: FontWeight.w700)),
+                  child: Text(cancelText, style: const TextStyle(color: AppColors.muted, fontSize: 14, fontWeight: FontWeight.w600)),
                 ),
               ],
             ],

@@ -121,28 +121,9 @@ flutter:
   assets:
     - assets/images/
 
-  # Poppins (Google Fonts), bundled as local assets rather than fetched via
-  # the `google_fonts` package's runtime CDN download — this app is meant
-  # to be fully usable offline from first launch (see AppTextStyles), and
-  # a network-fetched font would break that on a first install with no
-  # connectivity. Unlike Nunito (previously used here), Poppins isn't
-  # published as a single variable font, so each weight is its own static
-  # file rather than one file repeated per weight entry.
-  fonts:
-    - family: Poppins
-      fonts:
-        - asset: assets/fonts/Poppins-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Poppins-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Poppins-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Poppins-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/Poppins-ExtraBold.ttf
-          weight: 800
-        - asset: assets/fonts/Poppins-Black.ttf
-          weight: 900
+  # No custom `fonts:` entry — the app deliberately uses the platform's
+  # own default font (Roboto on Android, San Francisco on iOS), same as
+  # WhatsApp, rather than bundling a display face. See AppTextStyles.
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

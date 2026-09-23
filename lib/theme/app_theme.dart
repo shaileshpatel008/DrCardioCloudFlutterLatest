@@ -10,7 +10,12 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'Poppins',
+      // Deliberately no custom `fontFamily` override — WhatsApp doesn't
+      // bundle a display font either, it just renders in the platform's
+      // own default (Roboto on Android, San Francisco on iOS), which
+      // reads noticeably lighter than a geometric display face like
+      // Nunito/Poppins at the same declared weights. Leaving this unset
+      // lets Flutter's Material theme fall back to that same default.
       scaffoldBackgroundColor: AppColors.surface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.brandRed,
@@ -78,10 +83,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.error, width: 1.8),
         ),
-        labelStyle: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
-        floatingLabelStyle: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700),
+        labelStyle: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w500),
+        floatingLabelStyle: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600),
         hintStyle: const TextStyle(color: AppColors.placeholder),
-        errorStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 12),
+        errorStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500, fontSize: 12),
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,

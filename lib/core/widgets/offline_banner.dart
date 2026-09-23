@@ -32,7 +32,7 @@ class OfflineBanner extends StatelessWidget {
                 'No internet connection',
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ),
           ],

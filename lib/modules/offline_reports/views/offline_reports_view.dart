@@ -29,7 +29,7 @@ class OfflineReportsView extends GetView<OfflineReportsController> {
                   Expanded(
                     child: Obx(() => Text(
                           'No internet connection — ${controller.pending.length} report${controller.pending.length == 1 ? '' : 's'} queued to sync',
-                          style: const TextStyle(color: Color(0xFF8A5000), fontWeight: FontWeight.w700, fontSize: 12.5),
+                          style: const TextStyle(color: Color(0xFF8A5000), fontWeight: FontWeight.w600, fontSize: 12.5),
                         )),
                   ),
                 ],
@@ -38,7 +38,7 @@ class OfflineReportsView extends GetView<OfflineReportsController> {
           }),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
-            child: Text('PENDING UPLOAD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
+            child: Text('PENDING UPLOAD', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 0.4)),
           ),
           Expanded(
             child: Obx(() {
@@ -94,11 +94,11 @@ class _PendingTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                 const SizedBox(height: 2),
                 Text(
                   failed ? 'Upload failed · tap retry' : '${DateFormat('d MMM, h:mm a').format(record.dateTime)} · Waiting for network',
-                  style: TextStyle(color: failed ? AppColors.error : AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: failed ? AppColors.error : AppColors.muted2, fontSize: 11.5, fontWeight: FontWeight.w500),
                 ),
               ],
             ),

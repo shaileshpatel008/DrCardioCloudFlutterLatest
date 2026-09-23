@@ -46,7 +46,7 @@ class OnboardingView extends GetView<OnboardingController> {
                       padding: const EdgeInsets.only(right: 8, top: 4),
                       child: TextButton(
                         onPressed: controller.finish,
-                        child: const Text('Skip', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700)),
+                        child: const Text('Skip', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ),
@@ -87,7 +87,7 @@ class OnboardingView extends GetView<OnboardingController> {
                                       const SizedBox(width: 6),
                                       Text(page.step,
                                           style: const TextStyle(
-                                              color: AppColors.brandRed, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+                                              color: AppColors.brandRed, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
                                     ],
                                   ),
                                 ),
@@ -95,13 +95,13 @@ class OnboardingView extends GetView<OnboardingController> {
                                 Text(
                                   page.title,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: AppColors.ink),
+                                  style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w700, color: AppColors.ink),
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
                                   page.description,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.muted, height: 1.5),
+                                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.muted, height: 1.5),
                                 ),
                               ],
                             ),

@@ -59,10 +59,10 @@ class DashboardTab extends GetView<HomeController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_greeting(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.muted2)),
+                    Text(_greeting(), style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.muted2)),
                     Text(
                       controller.storage.userName.isEmpty ? 'Clinician' : controller.storage.userName,
-                      style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: AppColors.ink),
+                      style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700, color: AppColors.ink),
                     ),
                   ],
                 ),
@@ -76,7 +76,7 @@ class DashboardTab extends GetView<HomeController> {
                 backgroundColor: AppColors.brandRed,
                 child: Text(
                   _initials(controller.storage.userName),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
                 ),
               ),
             ],
@@ -120,9 +120,9 @@ class DashboardTab extends GetView<HomeController> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Connecting…', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink)),
+                                Text('Connecting…', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink)),
                                 SizedBox(height: 2),
-                                Text('Reaching your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                Text('Reaching your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w500)),
                               ],
                             ),
                           ),
@@ -141,7 +141,7 @@ class DashboardTab extends GetView<HomeController> {
                               ),
                               const SizedBox(width: 8),
                               const Text('DEVICE CONNECTED',
-                                  style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
+                                  style: TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 0.4)),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -150,7 +150,7 @@ class DashboardTab extends GetView<HomeController> {
                               Expanded(
                                 child: Text(
                                   controller.bluetoothService.connectedDeviceName.value,
-                                  style: const TextStyle(color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.w800),
+                                  style: const TextStyle(color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.w700),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -162,7 +162,7 @@ class DashboardTab extends GetView<HomeController> {
                                   children: [
                                     const Icon(Icons.swap_horiz, size: 16, color: AppColors.brandRed),
                                     const SizedBox(width: 6),
-                                    const Text('Change', style: TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w700)),
+                                    const Text('Change', style: TextStyle(color: AppColors.brandRed, fontSize: 12, fontWeight: FontWeight.w600)),
                                   ],
                                 ),
                               ),
@@ -187,9 +187,9 @@ class DashboardTab extends GetView<HomeController> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('No device connected', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink)),
+                                Text('No device connected', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.ink)),
                                 SizedBox(height: 2),
-                                Text('Tap to connect your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                Text('Tap to connect your ECG device', style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w500)),
                               ],
                             ),
                           ),
@@ -228,11 +228,11 @@ class DashboardTab extends GetView<HomeController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(isTestMode ? 'Test ECG Recording' : 'New ECG Recording',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5)),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16.5)),
                             const SizedBox(height: 2),
                             Text(
                               isTestMode ? 'Device calibration waveform · not a patient signal' : '12-lead capture · ~90 sec',
-                              style: const TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w600),
+                              style: const TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -259,7 +259,7 @@ class DashboardTab extends GetView<HomeController> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text('$pending recording${pending == 1 ? '' : 's'} waiting to sync',
-                          style: const TextStyle(color: AppColors.pending, fontWeight: FontWeight.w700, fontSize: 13)),
+                          style: const TextStyle(color: AppColors.pending, fontWeight: FontWeight.w600, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -270,14 +270,14 @@ class DashboardTab extends GetView<HomeController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('RECENT REPORTS',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 0.4)),
               TextButton(
                 onPressed: controller.viewAllReports,
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0)),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('View All', style: TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                    Text('View All', style: TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w700)),
                     Icon(Icons.chevron_right, color: AppColors.brandRed, size: 16),
                   ],
                 ),
@@ -362,9 +362,9 @@ class _EmptyRecentReports extends StatelessWidget {
         children: [
           const Icon(Icons.description_outlined, color: AppColors.muted2, size: 28),
           const SizedBox(height: 10),
-          const Text('No recordings yet.', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          const Text('No recordings yet.', style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600, fontSize: 13.5)),
           const SizedBox(height: 3),
-          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -390,9 +390,9 @@ class _EcgLeftBadge extends StatelessWidget {
         children: [
           const Icon(Icons.monitor_heart_outlined, size: 15, color: AppColors.brandRed),
           const SizedBox(width: 5),
-          Text('$count', style: const TextStyle(color: AppColors.brandRedDark, fontSize: 13, fontWeight: FontWeight.w800)),
+          Text('$count', style: const TextStyle(color: AppColors.brandRedDark, fontSize: 13, fontWeight: FontWeight.w700)),
           const SizedBox(width: 3),
-          Text('LEFT', style: TextStyle(color: AppColors.brandRed.withValues(alpha: 0.75), fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
+          Text('LEFT', style: TextStyle(color: AppColors.brandRed.withValues(alpha: 0.75), fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
         ],
       ),
     );
