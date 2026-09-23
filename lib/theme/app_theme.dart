@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_text_styles.dart';
@@ -10,12 +11,15 @@ class AppTheme {
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
-      // Deliberately no custom `fontFamily` override — WhatsApp doesn't
-      // bundle a display font either, it just renders in the platform's
-      // own default (Roboto on Android, San Francisco on iOS), which
-      // reads noticeably lighter than a geometric display face like
-      // Nunito/Poppins at the same declared weights. Leaving this unset
-      // lets Flutter's Material theme fall back to that same default.
+      // Nunito via the google_fonts package: this call both registers the
+      // font for runtime download/caching and resolves to the family name
+      // Flutter needs here. Every plain `TextStyle(...)` used throughout
+      // the app (most of them, since call sites don't reference Nunito
+      // directly) picks this up the same way it would a pubspec-bundled
+      // family — ThemeData.fontFamily flows into the default TextTheme,
+      // which DefaultTextStyle then applies to any TextStyle that doesn't
+      // set its own fontFamily.
+      fontFamily: GoogleFonts.nunito().fontFamily,
       scaffoldBackgroundColor: AppColors.surface,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.brandRed,
@@ -83,10 +87,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.error, width: 1.8),
         ),
-        labelStyle: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w500),
-        floatingLabelStyle: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600),
+        floatingLabelStyle: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700),
         hintStyle: const TextStyle(color: AppColors.placeholder),
-        errorStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w500, fontSize: 12),
+        errorStyle: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600, fontSize: 12),
       ),
       cardTheme: CardThemeData(
         color: AppColors.card,

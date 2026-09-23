@@ -39,7 +39,7 @@ class SettingsView extends GetView<SettingsController> {
                 controller.testMode.value
                     ? 'Test mode acquires the device\'s built-in fixed calibration waveform instead of a patient\'s ECG — use it to verify the device and app, not for diagnosis.'
                     : 'ECG mode acquires live signal from the patient through the connected device.',
-                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w400, height: 1.4),
+                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
               )),
         ),
         const SizedBox(height: 18),
@@ -58,7 +58,7 @@ class SettingsView extends GetView<SettingsController> {
                 controller.patientInfoFirst.value
                     ? 'On: fill in patient details, then record. Turn off to record first and enter patient details afterward, right before the report is generated.'
                     : 'Off: start recording right away; patient details are collected afterward, right before the report is generated.',
-                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w400, height: 1.4),
+                style: const TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
               )),
         ),
         const SizedBox(height: 18),
@@ -113,7 +113,7 @@ class SettingsView extends GetView<SettingsController> {
           child: Text(
             'Report type controls the PDF\'s lead layout — one page is generated per selected type. '
             'Long lead is which lead the full-width rhythm strip at the bottom plots.',
-            style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w400, height: 1.4),
+            style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
         // Hidden for now (asked to keep the code, not remove it) — DIAGNOSTICS
@@ -135,7 +135,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 8, left: 4),
-        child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 0.4)),
+        child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.4)),
       );
 }
 
@@ -162,7 +162,7 @@ class _NavRow extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
         onTap: onTap,
         leading: _IconChip(icon),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
         trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
       );
 }
@@ -179,11 +179,11 @@ class _DropdownRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: _IconChip(icon),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
       trailing: DropdownButton<String>(
         value: options.contains(value) ? value : options.first,
         underline: const SizedBox.shrink(),
-        items: options.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600)))).toList(),
+        items: options.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700)))).toList(),
         onChanged: (v) {
           if (v != null) onChanged(v);
         },
@@ -201,7 +201,7 @@ class _SwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         leading: _IconChip(icon),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
         trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: AppColors.brandRed),
       );
 }
@@ -218,12 +218,12 @@ class _ReportTypeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() => ListTile(
           leading: const _IconChip(Icons.picture_as_pdf_outlined),
-          title: const Text('Report type', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+          title: const Text('Report type', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
           subtitle: Text(
             '${controller.reportTypes.length} selected · ${controller.reportTypes.join(', ')}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 11.5, color: AppColors.muted2, fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 11.5, color: AppColors.muted2, fontWeight: FontWeight.w600),
           ),
           trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
           onTap: () => _showReportTypeSheet(context),
@@ -251,11 +251,11 @@ class _ReportTypeRow extends StatelessWidget {
                   decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
                 ),
               ),
-              const Text('Report Type', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              const Text('Report Type', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               const SizedBox(height: 4),
               const Text(
                 'Generate one PDF page per selected layout',
-                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Obx(() => Column(
@@ -263,7 +263,7 @@ class _ReportTypeRow extends StatelessWidget {
                         .map((type) => CheckboxListTile(
                               value: controller.reportTypes.contains(type),
                               onChanged: (v) => controller.toggleReportType(type, v ?? false),
-                              title: Text(type, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                              title: Text(type, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                               activeColor: AppColors.brandRed,
                               controlAffinity: ListTileControlAffinity.leading,
                               contentPadding: EdgeInsets.zero,
@@ -348,7 +348,7 @@ class _QuickAccessTile extends StatelessWidget {
                   item.label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: AppColors.ink, height: 1.15),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: AppColors.ink, height: 1.15),
                 ),
               ),
             ],

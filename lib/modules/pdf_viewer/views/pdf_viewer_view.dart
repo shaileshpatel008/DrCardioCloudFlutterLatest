@@ -25,7 +25,7 @@ class PdfViewerView extends GetView<PdfViewerController> {
         // AppColors.ink background — perfectly invisible, not missing.
         iconTheme: const IconThemeData(color: Colors.white),
         actionsIconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
         elevation: 0,
         titleSpacing: 0,
         // Plain Text, not Obx: fileName is a one-time getter derived from

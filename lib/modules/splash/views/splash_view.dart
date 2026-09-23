@@ -66,7 +66,7 @@ class SplashView extends GetView<SplashController> {
               const SizedBox(height: 26),
               RichText(
                 text: const TextSpan(
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
                   children: [
                     TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
                     TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
@@ -78,7 +78,7 @@ class SplashView extends GetView<SplashController> {
               const SizedBox(height: 10),
               const Text(
                 'ECG IN YOUR POCKET',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted2, letterSpacing: 2.2),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 2.2),
               ),
               const SizedBox(height: 44),
               const SizedBox(

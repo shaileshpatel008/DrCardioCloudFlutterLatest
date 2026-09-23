@@ -46,11 +46,11 @@ class ReportTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text(record.patient.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     const SizedBox(height: 2),
                     Text(
                       '${record.patient.age} / ${record.patient.sex} · ${DateFormat('d MMM, h:mm a').format(record.dateTime)}',
-                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w500),
+                      style: const TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -105,7 +105,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.w600)),
+      child: Text(label, style: TextStyle(color: fg, fontSize: 10.5, fontWeight: FontWeight.w700)),
     );
   }
 }

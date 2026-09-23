@@ -32,7 +32,7 @@ class PatientInfoView extends GetView<PatientInfoController> {
                     controller.isEditMode
                         ? 'Update the patient details for this recording'
                         : 'Enter patient details before starting the recording',
-                    style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600, fontSize: 12.5),
+                    style: const TextStyle(color: AppColors.muted, fontWeight: FontWeight.w700, fontSize: 12.5),
                   ),
                   const SizedBox(height: 12),
                   _SectionCard(
@@ -73,7 +73,7 @@ class PatientInfoView extends GetView<PatientInfoController> {
                         children: [
                           _RequiredDot(),
                           SizedBox(width: 5),
-                          Text('Required fields', style: TextStyle(color: AppColors.muted2, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                          Text('Required fields', style: TextStyle(color: AppColors.muted2, fontSize: 10.5, fontWeight: FontWeight.w700)),
                         ],
                       ),
                     ],
@@ -195,10 +195,10 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 0.5)),
+              Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.muted2, letterSpacing: 0.5)),
               if (optionalTag) ...[
                 const SizedBox(width: 6),
-                const Text('optional', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.placeholder)),
+                const Text('optional', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.placeholder)),
               ],
             ],
           ),
@@ -238,7 +238,7 @@ class _CompactField extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (required) ...[const _RequiredDot(), const SizedBox(width: 5)],
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
           ],
         ),
         const SizedBox(height: 5),
@@ -247,7 +247,7 @@ class _CompactField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: maxLines,
           validator: validator,
-          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.ink),
+          style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.ink),
           decoration: InputDecoration(
             isDense: true,
             hintText: hintText,
@@ -322,7 +322,7 @@ class _PhotoPicker extends StatelessWidget {
           );
         }),
         const SizedBox(height: 6),
-        const Text('Photo', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: AppColors.muted2)),
+        const Text('Photo', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.muted2)),
       ],
     );
   }
@@ -337,7 +337,7 @@ class _SignaturePicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Signature', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+        const Text('Signature', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
         const SizedBox(height: 5),
         Obx(() {
           final path = controller.signaturePath.value;
@@ -358,7 +358,7 @@ class _SignaturePicker extends StatelessWidget {
                       children: [
                         Icon(Icons.draw_outlined, size: 16, color: AppColors.placeholder),
                         SizedBox(width: 6),
-                        Text('Tap to add signature', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.muted2)),
+                        Text('Tap to add signature', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.muted2)),
                       ],
                     )
                   : Stack(
@@ -373,7 +373,7 @@ class _SignaturePicker extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                               decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(6)),
-                              child: const Text('CLEAR', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.brandRed)),
+                              child: const Text('CLEAR', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: AppColors.brandRed)),
                             ),
                           ),
                         ),
@@ -408,11 +408,11 @@ void _showPhotoActionSheet(BuildContext context, PatientInfoController controlle
                 decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
               ),
             ),
-            const Text('Patient Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            const Text('Patient Photo', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 4),
             const Text(
               'Take a new photo or choose one from your gallery',
-              style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+              style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             _SheetAction(
@@ -474,7 +474,7 @@ class _SheetAction extends StatelessWidget {
               child: Icon(icon, size: 16, color: AppColors.brandRed),
             ),
             const SizedBox(width: 11),
-            Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: danger ? AppColors.brandRed : AppColors.ink)),
+            Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: danger ? AppColors.brandRed : AppColors.ink)),
           ],
         ),
       ),
@@ -551,19 +551,19 @@ class _SignaturePadSheetState extends State<_SignaturePadSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Patient Signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                  const Text('Patient Signature', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
                       widget.controller.pickSignatureFromGallery();
                     },
-                    child: const Text('Upload instead', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: const Text('Upload instead', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
               const Text(
                 'Sign with your finger below',
-                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               Container(
@@ -612,15 +612,15 @@ class _GenderField extends StatelessWidget {
           children: [
             _RequiredDot(),
             SizedBox(width: 5),
-            Text('Gender', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted)),
+            Text('Gender', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted)),
           ],
         ),
         const SizedBox(height: 5),
         Obx(() => DropdownButtonFormField<String>(
               initialValue: controller.gender.value,
-              hint: const Text('Select gender', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.placeholder)),
+              hint: const Text('Select gender', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.placeholder)),
               validator: (v) => v == null ? 'Required' : null,
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500, color: AppColors.ink),
+              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.ink),
               decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 13, vertical: 13)),
               items: const [
                 DropdownMenuItem(value: 'Male', child: Text('Male')),

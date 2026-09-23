@@ -79,7 +79,7 @@ class LoginView extends GetView<LoginController> {
                             const SizedBox(width: 12),
                             RichText(
                               text: const TextSpan(
-                                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
+                                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
                                 children: [
                                   TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
                                   TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
@@ -93,7 +93,7 @@ class LoginView extends GetView<LoginController> {
                         const SizedBox(height: 6),
                         const Text(
                           'Sign in to capture and sync 12-lead ECGs',
-                          style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: AppColors.muted, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 30),
                         Form(
@@ -150,7 +150,7 @@ class LoginView extends GetView<LoginController> {
                                                 height: 20,
                                                 child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
                                               )
-                                            : const Text('Sign In', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                            : const Text('Sign In', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
                                       ),
                                     ),
                                   )),
@@ -165,7 +165,7 @@ class LoginView extends GetView<LoginController> {
                             SizedBox(width: 6),
                             Text(
                               'Encrypted sync · Works fully offline',
-                              style: TextStyle(color: AppColors.muted2, fontSize: 11, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: AppColors.muted2, fontSize: 11, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -218,7 +218,7 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w600, letterSpacing: 0.4),
+          style: const TextStyle(color: AppColors.muted, fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 0.4),
         ),
         const SizedBox(height: 6),
         TextFormField(
@@ -232,7 +232,7 @@ class _LabeledField extends StatelessWidget {
             filled: true,
             fillColor: AppColors.surface,
             hintText: hintText,
-            hintStyle: const TextStyle(color: AppColors.placeholder, fontSize: 14, fontWeight: FontWeight.w500),
+            hintStyle: const TextStyle(color: AppColors.placeholder, fontSize: 14, fontWeight: FontWeight.w600),
             prefixIcon: Icon(prefixIcon, color: AppColors.muted2, size: 20),
             suffixIcon: suffixIcon,
             contentPadding: const EdgeInsets.symmetric(vertical: 14),
@@ -258,8 +258,8 @@ class _AgreementRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const baseStyle = TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w500, height: 1.4);
-    const linkStyle = TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.4);
+    const baseStyle = TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.4);
+    const linkStyle = TextStyle(color: AppColors.brandRed, fontSize: 12.5, fontWeight: FontWeight.w700, height: 1.4);
 
     return Obx(() => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +317,7 @@ class _AgreementRow extends StatelessWidget {
                 padding: EdgeInsets.only(left: 30, top: 5),
                 child: Text(
                   'Please agree to continue.',
-                  style: TextStyle(color: AppColors.error, fontSize: 11.5, fontWeight: FontWeight.w600),
+                  style: TextStyle(color: AppColors.error, fontSize: 11.5, fontWeight: FontWeight.w700),
                 ),
               ),
           ],

@@ -36,7 +36,7 @@ class HelpView extends GetView<HelpController> {
             children: [
               const Icon(Icons.replay_circle_filled_outlined, color: AppColors.brandRed),
               const SizedBox(width: 12),
-              const Expanded(child: Text('Watch the getting-started walkthrough again', style: TextStyle(fontWeight: FontWeight.w600))),
+              const Expanded(child: Text('Watch the getting-started walkthrough again', style: TextStyle(fontWeight: FontWeight.w700))),
               TextButton(onPressed: controller.replayWalkthrough, child: const Text('Replay')),
             ],
           ),
@@ -51,11 +51,11 @@ class HelpView extends GetView<HelpController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Still stuck?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+              const Text('Still stuck?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
               const SizedBox(height: 3),
               const Text(
                 'Call or chat with our support team',
-                style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w500),
+                style: TextStyle(color: AppColors.muted, fontSize: 12.5, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 14),
               Row(
@@ -92,7 +92,7 @@ class HelpView extends GetView<HelpController> {
         const Text(
           'Kavitul Technologies Pvt. Ltd.\nsupport@drcardio.in',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w500),
+          style: TextStyle(color: AppColors.muted2, fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -112,7 +112,7 @@ class _FaqTile extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          title: Text(question, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          title: Text(question, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
           children: [Text(answer, style: const TextStyle(color: AppColors.muted, fontSize: 13, height: 1.5))],

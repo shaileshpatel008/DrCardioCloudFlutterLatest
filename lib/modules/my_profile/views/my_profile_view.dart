@@ -20,7 +20,7 @@ class MyProfileView extends GetView<MyProfileController> {
               backgroundColor: AppColors.brandRed,
               child: Text(
                 controller.nameController.text.isEmpty ? '?' : controller.nameController.text.substring(0, 1).toUpperCase(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 28),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 28),
               ),
             ),
           ),

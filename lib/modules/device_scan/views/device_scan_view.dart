@@ -20,7 +20,7 @@ class DeviceScanView extends GetView<DeviceScanController> {
                 padding: EdgeInsets.all(20),
                 child: Text(
                   'Turn on the device and keep it nearby. We’ll list any Dr.Cardio recorder in range.',
-                  style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w500, fontSize: 13),
+                  style: TextStyle(color: AppColors.muted, fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),
               Expanded(
@@ -74,7 +74,7 @@ class DeviceScanView extends GetView<DeviceScanController> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(device.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5)),
+                                      Text(device.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                                       const SizedBox(height: 2),
                                       Text(
                                         isConnected
@@ -84,7 +84,7 @@ class DeviceScanView extends GetView<DeviceScanController> {
                                                 : (device.isBonded ? 'Previously paired' : 'Available'),
                                         style: TextStyle(
                                           color: isConnected ? AppColors.success : (connecting ? AppColors.brandRed : AppColors.muted2),
-                                          fontWeight: isConnected || connecting ? FontWeight.w600 : FontWeight.w500,
+                                          fontWeight: isConnected || connecting ? FontWeight.w700 : FontWeight.w600,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -155,13 +155,13 @@ class _ConnectingOverlay extends StatelessWidget {
               Text(
                 'Connecting to $deviceName…',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
               ),
               const SizedBox(height: 4),
               const Text(
                 'This can take a few seconds, especially the first time.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w500),
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
           ),

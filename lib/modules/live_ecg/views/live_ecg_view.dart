@@ -62,15 +62,15 @@ class LiveEcgView extends GetView<LiveEcgController> {
                         children: [
                           Text(name.isEmpty ? 'New Recording' : name,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                              style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
                           if (name.isNotEmpty)
                             Text('ID ${controller.patient.value.patientId} · ${controller.patient.value.age} / ${controller.patient.value.sex}',
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w500))
+                                style: const TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600))
                           else
                             const Text('Patient details added after saving',
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w500)),
+                                style: TextStyle(color: Color(0xFF9A928E), fontSize: 11, fontWeight: FontWeight.w600)),
                         ],
                       );
                     }),
@@ -137,7 +137,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                       Expanded(
                         child: Text('Electrode off: ${off.join(', ')}',
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: AppColors.brandRed, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                            style: const TextStyle(color: AppColors.brandRed, fontSize: 11.5, fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -185,7 +185,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                       const Padding(
                         padding: EdgeInsets.only(left: 4, bottom: 4),
                         child: Text('RHYTHM · LEAD II',
-                            style: TextStyle(color: AppColors.monitorTrace, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                            style: TextStyle(color: AppColors.monitorTrace, fontSize: 10.5, fontWeight: FontWeight.w700)),
                       ),
                       EcgLeadChart(leadIndex: 1, visibleSamples: EcgData.instance.displayDataRangeX, height: 90, showLabel: false),
                     ],
@@ -296,7 +296,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                     decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
-                const Text('Acquisition Settings', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                const Text('Acquisition Settings', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 16),
                 Obx(() => _SheetDropdownRow(
                       label: 'Filter',
@@ -342,7 +342,7 @@ class _Chip extends StatelessWidget {
             Icon(icon, color: color, size: 12),
             const SizedBox(width: 4),
           ],
-          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
         ],
       ),
     );
@@ -360,13 +360,13 @@ class _SheetDropdownRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600))),
+        Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700))),
         DropdownButton<String>(
           value: options.contains(value) ? value : options.first,
           dropdownColor: const Color(0xFF262524),
           underline: const SizedBox.shrink(),
           items: options
-              .map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w600))))
+              .map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(color: AppColors.brandRed, fontWeight: FontWeight.w700))))
               .toList(),
           onChanged: (v) {
             if (v != null) onChanged(v);
@@ -422,7 +422,7 @@ class _ControlButton extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600)),
+        Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -510,7 +510,7 @@ class _SaveButton extends StatelessWidget {
                 : controller.isReading.value
                     ? 'Stop first'
                     : 'Save · ${controller.secondsUntilSaveReady}s',
-            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
           ),
         ],
       );
