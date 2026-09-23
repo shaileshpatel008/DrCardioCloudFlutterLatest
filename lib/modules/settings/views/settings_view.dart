@@ -116,11 +116,14 @@ class SettingsView extends GetView<SettingsController> {
             style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
-        const SizedBox(height: 18),
-        const _SectionLabel('DIAGNOSTICS'),
-        _Card(children: [
-          _NavRow(icon: Icons.bug_report_outlined, label: 'Share Debug Logs', onTap: controller.shareDebugLogs),
-        ]),
+        // Hidden for now (asked to keep the code, not remove it) — DIAGNOSTICS
+        // section with the "Share Debug Logs" row. controller.shareDebugLogs
+        // is untouched, so this is just re-adding these two widgets back in.
+        // const SizedBox(height: 18),
+        // const _SectionLabel('DIAGNOSTICS'),
+        // _Card(children: [
+        //   _NavRow(icon: Icons.bug_report_outlined, label: 'Share Debug Logs', onTap: controller.shareDebugLogs),
+        // ]),
       ],
     );
   }
