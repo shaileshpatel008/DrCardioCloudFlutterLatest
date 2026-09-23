@@ -167,44 +167,45 @@ class DashboardTab extends GetView<HomeController> {
             ),
           ),
           const SizedBox(height: 16),
+          // Dimmed (not disabled) when nothing's connected — still tappable,
+          // same as the original app's "Acquire New ECG": tapping this
+          // without a connected device jumps straight to Device Scan
+          // instead of doing nothing (see HomeController.startNewEcg()).
           Opacity(
             opacity: connected ? 1 : 0.45,
-            child: IgnorePointer(
-              ignoring: !connected,
-              child: Material(
-                color: AppColors.brandRed,
+            child: Material(
+              color: AppColors.brandRed,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: controller.startNewEcg,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
-                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
-                          child: Icon(isTestMode ? Icons.science_outlined : Icons.add, color: Colors.white, size: 24),
+                onTap: controller.startNewEcg,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
+                        child: Icon(isTestMode ? Icons.science_outlined : Icons.add, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(isTestMode ? 'Test ECG Recording' : 'New ECG Recording',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5)),
+                            const SizedBox(height: 2),
+                            Text(
+                              isTestMode ? 'Device calibration waveform · not a patient signal' : '12-lead capture · ~90 sec',
+                              style: const TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(isTestMode ? 'Test ECG Recording' : 'New ECG Recording',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5)),
-                              const SizedBox(height: 2),
-                              Text(
-                                isTestMode ? 'Device calibration waveform · not a patient signal' : '12-lead capture · ~90 sec',
-                                style: const TextStyle(color: Color(0xFFFBD9D2), fontSize: 12.5, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right, color: Colors.white),
-                      ],
-                    ),
+                      ),
+                      const Icon(Icons.chevron_right, color: Colors.white),
+                    ],
                   ),
                 ),
               ),

@@ -151,16 +151,29 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     await Get.toNamed(AppRoutes.deviceScan);
   }
 
-  /// Which screen opens first is a Settings toggle (`patientInfoFirst`) —
-  /// the original always went straight to Live ECG and collected patient
-  /// info afterward, right before generating the report; this port's own
-  /// default flips that order (Patient Info first), so this only takes the
-  /// original's path when a client has explicitly asked to switch back.
+  /// Port of `MainActivity`'s "Acquire New ECG" click handler: connected ->
+  /// proceed; still connecting -> toast rather than doing anything (a
+  /// second tap shouldn't kick off a second connection attempt); not
+  /// connected at all -> straight to Device Scan instead of just refusing,
+  /// since that's the only thing tapping this button could sensibly do
+  /// next anyway.
+  ///
+  /// Which screen opens first once connected is a Settings toggle
+  /// (`patientInfoFirst`) — the original always went straight to Live ECG
+  /// and collected patient info afterward, right before generating the
+  /// report; this port's own default flips that order (Patient Info
+  /// first), so this only takes the original's path when a client has
+  /// explicitly asked to switch back.
   void startNewEcg() {
-    if (bluetoothService.state.value != BtConnectionState.connected) {
-      AppToast.warning('Connect to the ECG device first.', title: 'Not connected');
-      return;
+    switch (bluetoothService.state.value) {
+      case BtConnectionState.connecting:
+        AppToast.warning('Please wait, trying to connect…', title: 'Connecting');
+        return;
+      case BtConnectionState.disconnected:
+        connectDevice();
+        return;
+      case BtConnectionState.connected:
+        Get.toNamed(storage.patientInfoFirst ? AppRoutes.patientInfo : AppRoutes.liveEcg);
     }
-    Get.toNamed(storage.patientInfoFirst ? AppRoutes.patientInfo : AppRoutes.liveEcg);
   }
 }
