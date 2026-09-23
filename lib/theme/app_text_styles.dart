@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Nunito (Google Fonts), bundled as a local asset and set as the app's
+/// Poppins (Google Fonts), bundled as a local asset and set as the app's
 /// default `fontFamily` in [AppTheme] — see `pubspec.yaml`'s `fonts:`
 /// entry for why it's bundled rather than fetched at runtime via the
 /// `google_fonts` package (this app needs to work fully offline from
