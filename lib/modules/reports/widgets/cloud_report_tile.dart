@@ -168,9 +168,13 @@ class _CloudStatusBadge extends StatelessWidget {
       bg = AppColors.pendingBg;
       label = 'Reported';
     } else {
+      // "Pending" here was easy to misread as this same screen's other
+      // "Pending" (a local recording still waiting to *upload* — see the
+      // offline filter chips) — this is a different thing entirely: it's
+      // already on the server, just not yet reported by a cardiologist.
       fg = AppColors.muted2;
       bg = AppColors.offlineBg;
-      label = 'Pending';
+      label = 'Not Reported';
     }
     return Padding(
       padding: const EdgeInsets.only(right: 4),
