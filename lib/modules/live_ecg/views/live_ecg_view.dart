@@ -478,7 +478,11 @@ class _SaveButton extends StatelessWidget {
                   opacity: ready ? 1 : 0.4,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(_size / 2),
-                    onTap: ready ? controller.saveAndExit : null,
+                    // Always tappable, even while dimmed/"not ready" — a
+                    // disabled (onTap: null) button here just did nothing
+                    // when tapped mid-recording, which looked broken.
+                    // handleSaveTap() tells the user why instead.
+                    onTap: controller.isSaving.value ? null : controller.handleSaveTap,
                     child: Container(
                       width: _size,
                       height: _size,
@@ -496,7 +500,16 @@ class _SaveButton extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            ready ? 'Save' : 'Save · ${controller.secondsUntilSaveReady}s',
+            ready
+                ? 'Save'
+                // Recording can already have passed the minimum duration
+                // while isReading is still true (canSave requires both) —
+                // secondsUntilSaveReady would clamp to 0 and show a
+                // confusing "Save · 0s" right when the user is most likely
+                // to tap it, mid-recording.
+                : controller.isReading.value
+                    ? 'Stop first'
+                    : 'Save · ${controller.secondsUntilSaveReady}s',
             style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
           ),
         ],

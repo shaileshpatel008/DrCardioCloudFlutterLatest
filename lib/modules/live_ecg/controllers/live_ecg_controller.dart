@@ -247,6 +247,23 @@ class LiveEcgController extends GetxController {
     if (actualGain != null) bluetoothService.sendGain(actualGain);
   }
 
+  /// Save button's tap handler — unlike the button itself (disabled via
+  /// `onTap: ready ? controller.saveAndExit : null`, so a tap while
+  /// disabled does nothing at all and looks broken), this is wired up
+  /// unconditionally so a tap while not ready still tells the user why,
+  /// same as Stop already does for a recording that's too short.
+  void handleSaveTap() {
+    if (!canSave) {
+      if (isReading.value) {
+        AppToast.warning('Stop the recording before you can save the report.', title: 'Still Recording');
+      } else if (!isSaving.value) {
+        AppToast.warning('Need to acquire for at least $minRecordingSeconds seconds.', title: 'Recording too short');
+      }
+      return;
+    }
+    saveAndExit();
+  }
+
   /// Port of `NewEcgActivity`'s `fab_generate_report` handler: generates
   /// straight away when the patient is already known, otherwise opens
   /// Patient Info first (`openPatientForm()` /
