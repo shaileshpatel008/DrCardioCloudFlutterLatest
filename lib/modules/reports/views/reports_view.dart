@@ -25,8 +25,19 @@ class ReportsView extends GetView<ReportsController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            child: Text('Reports', style: Theme.of(context).textTheme.headlineSmall),
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 4),
+            child: Row(
+              children: [
+                Expanded(child: Text('Reports', style: Theme.of(context).textTheme.headlineSmall)),
+                Obx(() => IconButton(
+                      onPressed: controller.isLoading.value ? null : controller.reload,
+                      icon: controller.isLoading.value
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.muted2))
+                          : const Icon(Icons.refresh, color: AppColors.ink),
+                      tooltip: 'Refresh',
+                    )),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),

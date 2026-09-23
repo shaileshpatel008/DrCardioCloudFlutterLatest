@@ -13,6 +13,7 @@ import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/remote_report_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
+import '../../home/controllers/home_controller.dart';
 
 /// Port of `ReportActivity` (the Reports tab). Same exclusive-source
 /// switch as the original's `onResume()`
@@ -49,6 +50,19 @@ class ReportsController extends GetxController {
     // tab does, so a live listener is this app's equivalent of "re-check
     // when the screen would next become current".
     ever(connectivity.isOnline, (_) => reload());
+    // Reports lives inside Home's IndexedStack (see HomeBinding) — it's
+    // created once and kept alive across tab switches, not rebuilt every
+    // time it's shown, so nothing else here re-runs when the user comes
+    // back to this tab after uploading/syncing a report elsewhere. Original
+    // app parity: ReportActivity.onResume() re-hits
+    // callGetReportsECGsListApi()/load_file_list() on every single visit;
+    // watching HomeController's tab index is this port's equivalent of
+    // that visit signal.
+    if (Get.isRegistered<HomeController>()) {
+      ever(Get.find<HomeController>().tabIndex, (index) {
+        if (index == 1) reload();
+      });
+    }
   }
 
   Future<void> reload() async {
