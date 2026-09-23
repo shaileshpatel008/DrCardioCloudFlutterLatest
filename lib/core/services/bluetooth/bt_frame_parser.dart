@@ -29,9 +29,18 @@ class BtFrameParser {
   final List<int> _dataBuf = [];
   int _resyncCount = 0;
 
-  /// SOR_B packets carry no status bytes of their own; reused across BLE
-  /// notifications the same way `NewEcgActivity.lastStatusBytes` is.
-  List<int> _bleLastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
+  /// SOR_B packets carry no status bytes of their own — the device only
+  /// resends lead-off status on the (less frequent) SOR_A packets — so both
+  /// the classic-SPP byte-at-a-time path ([addByte]) and the BLE path
+  /// ([addBlePacket]) carry forward the last SOR_A's status bytes for every
+  /// SOR_B packet in between, the same way `NewEcgActivity.lastStatusBytes`
+  /// does. Without this, a SOR_B packet's [EcgFramePacket.statusBytes] would
+  /// be empty, `EcgEngine` would never update `EcgData.leadStatus` for it,
+  /// and — since most streamed samples arrive as SOR_B — the lead-off
+  /// warning banner would only ever reflect whatever the very first SOR_A
+  /// packet said, frozen from then on, rather than the device's current
+  /// lead-off state.
+  List<int> _lastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
 
   final StreamController<EcgFramePacket> _packetController = StreamController<EcgFramePacket>.broadcast();
   final StreamController<void> _versionMarkerController = StreamController<void>.broadcast();
@@ -54,7 +63,9 @@ class BtFrameParser {
           _dataBuf.clear();
           _state = _ParserState.readingStatus;
         } else if (b == BtProtocol.sorB) {
-          _statusBuf.clear();
+          _statusBuf
+            ..clear()
+            ..addAll(_lastStatusBytes);
           _dataBuf.clear();
           _state = _ParserState.readingData;
         } else if (b == BtProtocol.versionMarker) {
@@ -65,6 +76,7 @@ class BtFrameParser {
       case _ParserState.readingStatus:
         _statusBuf.add(b);
         if (_statusBuf.length >= BtProtocol.statusBytes) {
+          _lastStatusBytes = List.unmodifiable(_statusBuf);
           _state = _ParserState.readingData;
         }
         break;
@@ -137,9 +149,9 @@ class BtFrameParser {
     final List<int> statusBytes;
     if (packetType == BtProtocol.sorA) {
       statusBytes = List.unmodifiable(data.sublist(1, 1 + BtProtocol.statusBytes));
-      _bleLastStatusBytes = statusBytes;
+      _lastStatusBytes = statusBytes;
     } else {
-      statusBytes = _bleLastStatusBytes;
+      statusBytes = _lastStatusBytes;
     }
 
     final sampleCount = (data.length - headerLen - trailerLen) ~/ dataByteCount;
@@ -158,7 +170,7 @@ class BtFrameParser {
     _statusBuf.clear();
     _dataBuf.clear();
     _resyncCount = 0;
-    _bleLastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
+    _lastStatusBytes = List.filled(BtProtocol.statusBytes, 0);
   }
 
   void dispose() {
