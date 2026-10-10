@@ -48,7 +48,7 @@ class PdfReportService {
         // not just cosmetics.
         pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.all(28),
-        header: (context) => _buildLetterhead(storage),
+        header: (context) => _buildLetterhead(storage, record),
         // Port of `PdfGenerator.generatePDF()`'s loop over
         // `settings.reportTypes`/`settings.reports[i]` — one page per
         // selected report type, appended to the same document.
@@ -115,10 +115,15 @@ class PdfReportService {
     }
 
     final analysisStrip = _buildAnalysisStrip(record);
+    final notesBlock = _buildNotesBlock(record);
 
     return [
       pw.SizedBox(height: 10),
       _buildPatientInfoTable(record, photoImage),
+      if (notesBlock != null) ...[
+        pw.SizedBox(height: 8),
+        notesBlock,
+      ],
       if (analysisStrip != null) ...[
         pw.SizedBox(height: 8),
         analysisStrip,
@@ -142,7 +147,12 @@ class PdfReportService {
     ];
   }
 
-  static pw.Widget _buildLetterhead(StorageService storage) {
+  static pw.Widget _buildLetterhead(StorageService storage, EcgRecordModel record) {
+    // Port of `PdfGenerator.drawDoctorInfo()` — the clinician's own name/
+    // contact/address (set from My Profile), shown prominently above the
+    // patient info — was missing entirely from this port even though the
+    // fields have been in StorageService/My Profile all along.
+    final doctorLine = [storage.doctorName, storage.doctorContactNo, storage.doctorAddress].where((s) => s.isNotEmpty).join('   |   ');
     return pw.Column(
       children: [
         pw.Row(
@@ -166,11 +176,19 @@ class PdfReportService {
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
                 pw.Text('12-Lead ECG Report', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _inkColor)),
-                pw.Text(_formatDate(DateTime.now()), style: pw.TextStyle(fontSize: 8, color: _mutedColor)),
+                // The record's own date/time, not the moment this PDF
+                // happens to be (re)generated — this is now the only place
+                // that date appears (the patient-info table's redundant
+                // "RECORDED" field was dropped), so it has to be right.
+                pw.Text('Acquired: ${_formatDate(record.dateTime)}', style: pw.TextStyle(fontSize: 8, color: _mutedColor)),
               ],
             ),
           ],
         ),
+        if (doctorLine.isNotEmpty) ...[
+          pw.SizedBox(height: 4),
+          pw.Text(doctorLine, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: _inkColor)),
+        ],
         pw.SizedBox(height: 8),
         pw.Container(height: 2, color: _headerColor),
       ],
@@ -204,8 +222,10 @@ class PdfReportService {
                   _infoField('AGE / SEX', '${record.patient.age} / ${record.patient.sex}'),
                 ]),
                 pw.SizedBox(height: 8),
+                // "RECORDED" used to repeat here — the date already shows
+                // once, correctly, at the top right of every page (see
+                // _buildLetterhead), so this row no longer duplicates it.
                 pw.Row(children: [
-                  _infoField('RECORDED', _formatDate(record.dateTime)),
                   _infoField('DEVICE', record.deviceName.isEmpty ? '—' : record.deviceName),
                   _infoField('HEART RATE', record.hr.isEmpty ? '—' : '${record.hr} bpm'),
                 ]),
@@ -267,6 +287,43 @@ class PdfReportService {
                   ],
                 ))
             .toList(),
+      ),
+    );
+  }
+
+  /// Port of `PdfGenerator.getComments()`/`drawComments()` — the patient's
+  /// clinical notes, entered on Patient Details, were captured into
+  /// [PatientModel.comments] but never actually made it into this port's
+  /// report. Medications sits alongside it in the same "Clinical Notes"
+  /// form section and has nowhere else it's ever shown either, so it's
+  /// included here too even though the original app never had that field
+  /// — leaving it captured but permanently invisible would make it
+  /// pointless to ask the clinician for in the first place. Both lines are
+  /// independently optional; the whole block is omitted when neither has
+  /// anything to show.
+  static pw.Widget? _buildNotesBlock(EcgRecordModel record) {
+    final medications = record.patient.medications.trim();
+    final comments = record.patient.comments.trim();
+    if (medications.isEmpty && comments.isEmpty) return null;
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(border: pw.Border.all(color: _borderColor), borderRadius: pw.BorderRadius.circular(6)),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          if (medications.isNotEmpty) ...[
+            pw.Text('MEDICATIONS', style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: _mutedColor)),
+            pw.SizedBox(height: 2),
+            pw.Text(medications, style: pw.TextStyle(fontSize: 8.5, color: _inkColor)),
+          ],
+          if (medications.isNotEmpty && comments.isNotEmpty) pw.SizedBox(height: 6),
+          if (comments.isNotEmpty) ...[
+            pw.Text('COMMENTS', style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: _mutedColor)),
+            pw.SizedBox(height: 2),
+            pw.Text(comments, style: pw.TextStyle(fontSize: 8.5, color: _inkColor)),
+          ],
+        ],
       ),
     );
   }
@@ -426,11 +483,20 @@ class PdfReportService {
         final midY = size.y / 2;
         final window = samples.length > 300 ? samples.sublist(samples.length - 300) : samples;
         final xScale = size.x / window.length;
+        // Was a flat magic number (14) with no relation to the cell's
+        // actual size — a scale tuned for one layout's cell height
+        // overshot a smaller one, pushing the trace out of its own row
+        // and into the next lead's. EcgLeadChart (the live monitor view)
+        // already derives its scale from the box it's actually drawing
+        // into (`size.height / 5`) and clamps to the box bounds for the
+        // same reason; mirrored here instead of inventing a new constant.
+        final scaleY = size.y / 5;
+        double y(double v) => (midY - v * scaleY).clamp(0.0, size.y);
         context.setStrokeColor(_inkColor);
         context.setLineWidth(0.6);
-        context.moveTo(0, midY - window[0] * 14);
+        context.moveTo(0, y(window[0]));
         for (var i = 1; i < window.length; i++) {
-          context.lineTo(i * xScale, midY - window[i] * 14);
+          context.lineTo(i * xScale, y(window[i]));
         }
         context.strokePath();
       },
