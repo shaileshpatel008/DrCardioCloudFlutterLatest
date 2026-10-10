@@ -224,14 +224,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                             onTap: controller.startRecording,
                             primary: !controller.isReading.value,
                           ),
-                          _ControlButton(
-                            icon: Icons.stop,
-                            label: 'Stop',
-                            enabled: controller.isReading.value,
-                            onTap: controller.stopRecording,
-                            primary: controller.isReading.value,
-                            pulsing: controller.isReading.value,
-                          ),
+                          _StopButton(controller: controller),
                           _SaveButton(controller: controller),
                         ],
                       )),
@@ -428,12 +421,65 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-/// Save, ringed by an animated progress indicator that fills over the
-/// minimum recording window (port of `NewEcgActivity.min_saved_seconds`
-/// — the original just silently withheld the report; this makes the wait
-/// visible instead of leaving Save looking randomly disabled).
+/// Plain Save button — the countdown-to-ready ring that used to live here
+/// now rings the Stop button instead (see [_StopButton]), since the
+/// minimum-duration wait is something you watch out *while recording*,
+/// not something that belongs on a button that does nothing until it's
+/// over. The label always just reads "Save"; tapping before the minimum
+/// (or while still recording) still surfaces the same explanatory toast
+/// as before — see `LiveEcgController.handleSaveTap()` — this only
+/// changes what the button looks like, not when it's actually allowed.
 class _SaveButton extends StatelessWidget {
   const _SaveButton({required this.controller});
+  final LiveEcgController controller;
+
+  static const _size = 52.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final ready = controller.canSave;
+      return Column(
+        children: [
+          Opacity(
+            opacity: ready ? 1 : 0.4,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(_size / 2),
+              // Always tappable, even while dimmed/"not ready" — a
+              // disabled (onTap: null) button here just did nothing
+              // when tapped mid-recording, which looked broken.
+              // handleSaveTap() tells the user why instead.
+              onTap: controller.isSaving.value ? null : controller.handleSaveTap,
+              child: Container(
+                width: _size,
+                height: _size,
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
+                child: Center(
+                  child: controller.isSaving.value
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Save', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
+        ],
+      );
+    });
+  }
+}
+
+/// Stop, ringed by an animated progress indicator that counts the minimum
+/// recording window down — the reverse of how this ring used to fill up
+/// on the Save button (port of `NewEcgActivity.min_saved_seconds`'s "the
+/// original just silently withheld the report" problem, moved to the
+/// button that's actually interactive during the wait). Starts full the
+/// moment a recording begins and drains to empty once
+/// [LiveEcgController.minRecordingSeconds] is reached, turning green to
+/// match [_SaveButton]'s old "ready" color once it does.
+class _StopButton extends StatelessWidget {
+  const _StopButton({required this.controller});
   final LiveEcgController controller;
 
   static const _size = 52.0;
@@ -447,72 +493,50 @@ class _SaveButton extends StatelessWidget {
       // a once-a-second Rx tick to rebuild on while recording, so the
       // ring animates continuously instead of only jumping at Start/Stop.
       controller.elapsedSeconds.value;
-      // Loaded data has no minimum-duration window to fill — it's ready
-      // the moment the screen opens, so the ring just shows full/green
-      // instead of stuck at empty (recordedSeconds is 0 in this mode).
-      final progress = controller.isLoadedMode ? 1.0 : (controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
-      final ready = controller.canSave;
-      return Column(
-        children: [
-          SizedBox(
-            width: _ringSize,
-            height: _ringSize,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: _ringSize,
-                  height: _ringSize,
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: progress),
-                    duration: const Duration(milliseconds: 400),
-                    builder: (context, animatedProgress, _) => CircularProgressIndicator(
-                      value: animatedProgress,
-                      strokeWidth: 3,
-                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation(ready ? const Color(0xFF3DDC84) : AppColors.brandRed),
-                    ),
-                  ),
-                ),
-                Opacity(
-                  opacity: ready ? 1 : 0.4,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(_size / 2),
-                    // Always tappable, even while dimmed/"not ready" — a
-                    // disabled (onTap: null) button here just did nothing
-                    // when tapped mid-recording, which looked broken.
-                    // handleSaveTap() tells the user why instead.
-                    onTap: controller.isSaving.value ? null : controller.handleSaveTap,
-                    child: Container(
-                      width: _size,
-                      height: _size,
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
-                      child: Center(
-                        child: controller.isSaving.value
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.save_outlined, color: Colors.white, size: 20),
+      final remaining = (1 - controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
+      final reachedMinimum = controller.recordedSeconds >= LiveEcgController.minRecordingSeconds;
+      final enabled = controller.isReading.value;
+      return Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: Column(
+          children: [
+            SizedBox(
+              width: _ringSize,
+              height: _ringSize,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: _ringSize,
+                    height: _ringSize,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 1, end: remaining),
+                      duration: const Duration(milliseconds: 400),
+                      builder: (context, animatedValue, _) => CircularProgressIndicator(
+                        value: animatedValue,
+                        strokeWidth: 3,
+                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                        valueColor: AlwaysStoppedAnimation(reachedMinimum ? const Color(0xFF3DDC84) : AppColors.brandRed),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  InkWell(
+                    borderRadius: BorderRadius.circular(_size / 2),
+                    onTap: enabled ? controller.stopRecording : null,
+                    child: Container(
+                      width: _size,
+                      height: _size,
+                      decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
+                      child: const Icon(Icons.stop, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            ready
-                ? 'Save'
-                // Recording can already have passed the minimum duration
-                // while isReading is still true (canSave requires both) —
-                // secondsUntilSaveReady would clamp to 0 and show a
-                // confusing "Save · 0s" right when the user is most likely
-                // to tap it, mid-recording.
-                : controller.isReading.value
-                    ? 'Stop first'
-                    : 'Save · ${controller.secondsUntilSaveReady}s',
-            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text('Stop', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
+          ],
+        ),
       );
     });
   }
