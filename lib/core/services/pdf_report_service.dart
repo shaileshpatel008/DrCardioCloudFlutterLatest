@@ -129,12 +129,15 @@ class PdfReportService {
         analysisStrip,
       ],
       pw.SizedBox(height: 14),
-      pw.Text('12-LEAD ECG — ${reportType.toUpperCase()}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
+      // A typographic em-dash here used to render as an empty box — the
+      // PDF's base font doesn't have that glyph — so every section title
+      // sticks to a plain ASCII hyphen instead.
+      pw.Text('12-LEAD ECG - ${reportType.toUpperCase()}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
       pw.SizedBox(height: 6),
       _buildLeadGrid(record, columns: columns, rowsPerColumn: rowsPerColumn, simultaneous: simultaneous),
       if (reportType.contains('4x3')) ...[
         pw.SizedBox(height: 14),
-        pw.Text('RHYTHM STRIP — LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
+        pw.Text('RHYTHM STRIP - LEAD ${storage.longLead}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: _headerColor)),
         pw.SizedBox(height: 6),
         _buildRhythmStrip(record, storage.longLead),
       ],
@@ -201,7 +204,9 @@ class PdfReportService {
           children: [
             pw.Text(label, style: pw.TextStyle(fontSize: 7, color: _mutedColor)),
             pw.SizedBox(height: 2),
-            pw.Text(value.isEmpty ? '—' : value, style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: _inkColor)),
+            // A plain hyphen, not an em-dash — the PDF's base font has no
+            // glyph for that and silently renders it as an empty box.
+            pw.Text(value.isEmpty ? '-' : value, style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, color: _inkColor)),
           ],
         ),
       );
@@ -219,15 +224,18 @@ class PdfReportService {
                 pw.Row(children: [
                   _infoField('PATIENT', record.patient.name),
                   _infoField('ID', record.patient.patientId),
-                  _infoField('AGE / SEX', '${record.patient.age} / ${record.patient.sex}'),
+                  // Age is optional on Patient Details — falls back to a
+                  // placeholder on its own instead of leaving a blank
+                  // before the slash (e.g. " / Male").
+                  _infoField('AGE / SEX', '${record.patient.age.isEmpty ? '-' : record.patient.age} / ${record.patient.sex}'),
                 ]),
                 pw.SizedBox(height: 8),
                 // "RECORDED" used to repeat here — the date already shows
                 // once, correctly, at the top right of every page (see
                 // _buildLetterhead), so this row no longer duplicates it.
                 pw.Row(children: [
-                  _infoField('DEVICE', record.deviceName.isEmpty ? '—' : record.deviceName),
-                  _infoField('HEART RATE', record.hr.isEmpty ? '—' : '${record.hr} bpm'),
+                  _infoField('DEVICE', record.deviceName),
+                  _infoField('HEART RATE', record.hr.isEmpty ? '' : '${record.hr} bpm'),
                 ]),
               ],
             ),
@@ -448,7 +456,9 @@ class PdfReportService {
       children: [
         pw.Expanded(
           child: pw.Text(
-            '${storage.xAxisScale} mm/s · 10 mm/mV · ${record.filter}',
+            // A middle-dot separator here also rendered as an empty box
+            // for the same reason the em-dashes did — plain ASCII instead.
+            '${storage.xAxisScale} mm/s | 10 mm/mV | ${record.filter}',
             style: pw.TextStyle(fontSize: 8, color: _mutedColor),
           ),
         ),
