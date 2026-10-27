@@ -493,14 +493,17 @@ class PdfReportService {
         final midY = size.y / 2;
         final window = samples.length > 300 ? samples.sublist(samples.length - 300) : samples;
         final xScale = size.x / window.length;
-        // Was a flat magic number (14) with no relation to the cell's
-        // actual size — a scale tuned for one layout's cell height
-        // overshot a smaller one, pushing the trace out of its own row
-        // and into the next lead's. EcgLeadChart (the live monitor view)
-        // already derives its scale from the box it's actually drawing
-        // into (`size.height / 5`) and clamps to the box bounds for the
-        // same reason; mirrored here instead of inventing a new constant.
-        final scaleY = size.y / 5;
+        // Was first a flat magic number (14), then copied from
+        // EcgLeadChart's `size.height / 5` — neither has any relation to
+        // the device's actual calibration. The samples here are in the
+        // same raw-ADC-count units as `EcgData.valPerMv` (both come from
+        // `graph_scale * hpf_val` with no mV conversion applied), and
+        // `NewEcgActivity.modifyLineChartsUI()`'s fixed chart window
+        // (±1.5 * val_per_mv maps to the full panel) is the real
+        // calibration reference — mirrored here against this cell's own
+        // half-height instead of a made-up constant, same as the live
+        // monitor view now does.
+        final scaleY = (size.y / 2) / (1.5 * EcgData.instance.valPerMv);
         double y(double v) => (midY - v * scaleY).clamp(0.0, size.y);
         context.setStrokeColor(_inkColor);
         context.setLineWidth(0.6);

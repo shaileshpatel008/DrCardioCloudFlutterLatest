@@ -77,17 +77,37 @@ class _EcgPainter extends CustomPainter {
     final path = Path();
     final dx = size.width / visibleSamples;
     final midY = size.height / 2;
-    final scaleY = size.height / 5;
+    // Port of `NewEcgActivity.modifyLineChartsUI()`'s fixed Y-axis window
+    // (`leftAxis.setAxisMaximum/Minimum(±1.5 * settings.val_per_mv)`) —
+    // the plotted samples are in the same raw-ADC-count unit system as
+    // `val_per_mv` (both derive from `graph_scale * hpf_val` with no mV
+    // conversion in between), so half the panel height has to map to
+    // exactly `1.5 * valPerMv` of that same unit to match. The previous
+    // `size.height / 5` was a made-up constant with no relation to that
+    // calibration constant at all — for hwVersion 1 (valPerMv ~54.6) a
+    // normal QRS complex is tens of units tall, more than 10x what that
+    // constant assumed fit on screen, so nearly every beat saturated.
+    final scaleY = (size.height / 2) / (1.5 * EcgData.instance.valPerMv);
     for (var i = 0; i < window.length; i++) {
       final x = i * dx;
-      final y = (midY - window[i] * scaleY).clamp(0.0, size.height);
+      final y = midY - window[i] * scaleY;
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         path.lineTo(x, y);
       }
     }
+    // A real excursion past the calibrated window (big enough to be
+    // clinically real, e.g. hypertrophy) should still happen sometimes —
+    // MPAndroidChart's own renderer just crops it at the plot area
+    // instead of flattening it, so the trace visibly runs off the top/
+    // bottom edge rather than growing the ugly flat-topped "squares" a
+    // clamped coordinate produces whenever two consecutive samples both
+    // saturate.
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
     canvas.drawPath(path, tracePaint);
+    canvas.restore();
   }
 
   @override
