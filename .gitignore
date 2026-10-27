@@ -30,6 +30,12 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+# `/build/` only matches the repo root — the Android Gradle build (root
+# project output in android/build/, plus every module's own
+# android/*/build/, e.g. android/app/build/ where the built APK lands)
+# needed its own entry; discovered when actually running a build for the
+# first time this session surfaced it as an untracked directory.
+**/build/
 
 # Symbolication related
 app.*.symbols
