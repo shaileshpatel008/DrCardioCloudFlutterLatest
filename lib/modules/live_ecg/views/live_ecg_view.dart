@@ -218,9 +218,9 @@ class LiveEcgView extends GetView<LiveEcgController> {
               // observables in that branch, which it treats as a hard
               // error ("improper use of a GetX") rather than a no-op.
               child: Center(
-                child: _ControlBarCapsule(
-                  child: controller.isLoadedMode
-                      ? Row(
+                child: controller.isLoadedMode
+                    ? _ControlBarCapsule(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             _ControlButton(
@@ -232,24 +232,16 @@ class LiveEcgView extends GetView<LiveEcgController> {
                             const SizedBox(width: 28),
                             _SaveButton(controller: controller),
                           ],
-                        )
-                      : Obx(() => Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _ControlButton(
-                                icon: Icons.play_arrow,
-                                label: 'Start',
-                                enabled: !controller.isReading.value,
-                                onTap: controller.startRecording,
-                                primary: !controller.isReading.value,
-                              ),
-                              const SizedBox(width: 28),
-                              _StopButton(controller: controller),
-                              const SizedBox(width: 28),
-                              _SaveButton(controller: controller),
-                            ],
-                          )),
-                ),
+                        ),
+                      )
+                    // Shows exactly one primary action at a time (Start,
+                    // Stop or Save) instead of all three sitting side by
+                    // side at equal weight the whole time — a first-time
+                    // user had no cue, once a recording stopped, that the
+                    // next step was to tap Save. Button taps and
+                    // validation (the 20s minimum, etc.) are unchanged;
+                    // only what's visible and how it's emphasized is.
+                    : _LiveControlFlow(controller: controller),
               ),
             ),
           ],
@@ -418,16 +410,15 @@ class _ControlBarCapsule extends StatelessWidget {
 
 /// Icon-only control button — same size regardless of [primary] now (the
 /// old 72px-vs-52px size jump for Start is gone along with the text
-/// label underneath); [primary] still switches the red/translucent-white
-/// fill so Start reads as the "go" action while idle.
+/// label underneath) — now only used for Loaded Data's "Patient" button,
+/// since Start/Stop/Save each moved to their own state-specific widget in
+/// [_LiveControlFlow].
 class _ControlButton extends StatelessWidget {
   const _ControlButton({
     required this.icon,
     required this.label,
     required this.enabled,
     required this.onTap,
-    this.primary = false,
-    this.loading = false,
   });
 
   static const _size = 46.0;
@@ -436,8 +427,6 @@ class _ControlButton extends StatelessWidget {
   final String label;
   final bool enabled;
   final VoidCallback onTap;
-  final bool primary;
-  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -451,15 +440,9 @@ class _ControlButton extends StatelessWidget {
           child: Container(
             width: _size,
             height: _size,
-            decoration: BoxDecoration(
-              color: primary ? AppColors.brandRed : Colors.white.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: loading
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Icon(icon, color: Colors.white, size: 21),
-            ),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 21),
           ),
         ),
       ),
@@ -467,14 +450,11 @@ class _ControlButton extends StatelessWidget {
   }
 }
 
-/// Plain Save button — the countdown-to-ready ring that used to live here
-/// now rings the Stop button instead (see [_StopButton]), since the
-/// minimum-duration wait is something you watch out *while recording*,
-/// not something that belongs on a button that does nothing until it's
-/// over. The label always just reads "Save"; tapping before the minimum
-/// (or while still recording) still surfaces the same explanatory toast
-/// as before — see `LiveEcgController.handleSaveTap()` — this only
-/// changes what the button looks like, not when it's actually allowed.
+/// Plain Save button used in Loaded Data mode (alongside the "Patient"
+/// button above) — a fresh recording's Save lives in [_StoppedState]
+/// instead, as the big labeled "Save Report" button. The label always
+/// just reads "Save"; tapping while saving does nothing further, same as
+/// before — see `LiveEcgController.handleSaveTap()`.
 class _SaveButton extends StatelessWidget {
   const _SaveButton({required this.controller});
   final LiveEcgController controller;
@@ -513,20 +493,79 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// Stop, ringed by an animated progress indicator that counts the minimum
-/// recording window down — the reverse of how this ring used to fill up
-/// on the Save button (port of `NewEcgActivity.min_saved_seconds`'s "the
-/// original just silently withheld the report" problem, moved to the
-/// button that's actually interactive during the wait). Starts full the
-/// moment a recording begins and drains to empty once
-/// [LiveEcgController.minRecordingSeconds] is reached, turning green to
-/// match [_SaveButton]'s old "ready" color once it does.
-class _StopButton extends StatelessWidget {
-  const _StopButton({required this.controller});
+const _kMutedCaption = Color(0xFF70686F);
+const _kReadyGreen = Color(0xFF3DDC84);
+const _kReadyGreenInk = Color(0xFF0E2A1B);
+
+/// Picks which of [_IdleState]/[_RecordingState]/[_StoppedState] to show —
+/// the entire reason this exists is that `recordedSeconds` (cumulative
+/// across every Start/Stop this screen visit) only ever needs checking
+/// right when [LiveEcgController.isReading] flips, so one outer `Obx` on
+/// that is enough to pick the branch; each branch below owns its own
+/// `Obx` for anything that needs finer-grained ticking (the ring, the
+/// Save spinner).
+class _LiveControlFlow extends StatelessWidget {
+  const _LiveControlFlow({required this.controller});
   final LiveEcgController controller;
 
-  static const _size = 46.0;
-  static const _ringSize = 52.0;
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.isReading.value) return _RecordingState(controller: controller);
+      if (controller.recordedSeconds > 0) return _StoppedState(controller: controller);
+      return _IdleState(controller: controller);
+    });
+  }
+}
+
+/// Nothing captured yet — only Start is shown. Stop and Save would do
+/// nothing right now, so they're left off entirely instead of sitting
+/// there dimmed.
+class _IdleState extends StatelessWidget {
+  const _IdleState({required this.controller});
+  final LiveEcgController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: controller.startRecording,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+            decoration: BoxDecoration(color: AppColors.brandRed, borderRadius: BorderRadius.circular(999)),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                SizedBox(width: 9),
+                Text('Start Recording', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text('Attach the leads, then tap Start', style: TextStyle(color: _kMutedCaption, fontSize: 10.5, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+/// Capturing — only Stop is shown, ringed by an animated progress
+/// indicator counting the minimum recording window down (port of
+/// `NewEcgActivity.min_saved_seconds`'s "the original just silently
+/// withheld the report" problem). Starts full the moment a recording
+/// begins and drains to empty once [LiveEcgController.minRecordingSeconds]
+/// is reached, turning green to match [_StoppedState]'s "ready" color
+/// once it does.
+class _RecordingState extends StatelessWidget {
+  const _RecordingState({required this.controller});
+  final LiveEcgController controller;
+
+  static const _size = 54.0;
+  static const _ringSize = 70.0;
 
   @override
   Widget build(BuildContext context) {
@@ -538,12 +577,10 @@ class _StopButton extends StatelessWidget {
       controller.elapsedSeconds.value;
       final remaining = (1 - controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
       final reachedMinimum = controller.recordedSeconds >= LiveEcgController.minRecordingSeconds;
-      final enabled = controller.isReading.value;
-      return Tooltip(
-        message: 'Stop',
-        child: Opacity(
-          opacity: enabled ? 1 : 0.4,
-          child: SizedBox(
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
             width: _ringSize,
             height: _ringSize,
             child: Stack(
@@ -557,26 +594,126 @@ class _StopButton extends StatelessWidget {
                     duration: const Duration(milliseconds: 400),
                     builder: (context, animatedValue, _) => CircularProgressIndicator(
                       value: animatedValue,
-                      strokeWidth: 2.5,
+                      strokeWidth: 3,
                       backgroundColor: Colors.white.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation(reachedMinimum ? const Color(0xFF3DDC84) : AppColors.brandRed),
+                      valueColor: AlwaysStoppedAnimation(reachedMinimum ? _kReadyGreen : AppColors.brandRed),
                     ),
                   ),
                 ),
                 InkWell(
                   borderRadius: BorderRadius.circular(_size / 2),
-                  onTap: enabled ? controller.stopRecording : null,
+                  onTap: controller.stopRecording,
                   child: Container(
                     width: _size,
                     height: _size,
                     decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
-                    child: const Icon(Icons.stop, color: Colors.white, size: 21),
+                    child: const Icon(Icons.stop, color: Colors.white, size: 22),
                   ),
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          const Text('Recording — needs at least ${LiveEcgController.minRecordingSeconds}s',
+              style: TextStyle(color: _kMutedCaption, fontSize: 10.5, fontWeight: FontWeight.w600)),
+        ],
+      );
+    });
+  }
+}
+
+/// Stopped, with something captured — a confirmation banner appears
+/// immediately (green once the minimum duration was met, red/amber if
+/// the recording was too short) and Save becomes a big labeled button,
+/// unmistakable instead of one small icon among three. Start recedes to
+/// a small "Record again" icon next to it — still one tap away for a
+/// retake, never removed. Tapping Save before the minimum, or while
+/// still recording, still surfaces the same explanatory toast as before
+/// (see `LiveEcgController.handleSaveTap()`) — this only changes what's
+/// visible and how much weight each action carries.
+class _StoppedState extends StatelessWidget {
+  const _StoppedState({required this.controller});
+  final LiveEcgController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final ready = controller.canSave;
+      final saving = controller.isSaving.value;
+      final tint = ready ? _kReadyGreen : AppColors.brandRed;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(color: tint.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(ready ? Icons.check_circle_outline : Icons.warning_amber_rounded, color: tint, size: 16),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    ready
+                        ? 'Recording captured — tap Save to generate the report'
+                        : 'Recording too short — needs at least ${LiveEcgController.minRecordingSeconds}s',
+                    style: TextStyle(color: tint, fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tooltip(
+                message: 'Record again',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(21),
+                  onTap: controller.startRecording,
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
+                    child: const Icon(Icons.refresh, color: Colors.white, size: 19),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Opacity(
+                opacity: ready ? 1 : 0.5,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  // Always tappable, even while dimmed/"not ready" — a
+                  // disabled (onTap: null) button here just did nothing
+                  // when tapped, which looked broken. handleSaveTap()
+                  // tells the user why instead.
+                  onTap: saving ? null : controller.handleSaveTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 15),
+                    decoration: BoxDecoration(
+                      color: ready ? _kReadyGreen : Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (saving)
+                          const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        else
+                          Icon(Icons.save_outlined, color: ready ? _kReadyGreenInk : Colors.white, size: 19),
+                        const SizedBox(width: 9),
+                        Text('Save Report',
+                            style: TextStyle(color: ready ? _kReadyGreenInk : Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       );
     });
   }
