@@ -614,7 +614,7 @@ class _RecordingState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text('Recording — needs at least ${LiveEcgController.minRecordingSeconds}s',
+          const Text('Recording - needs at least ${LiveEcgController.minRecordingSeconds}s',
               style: TextStyle(color: _kMutedCaption, fontSize: 10.5, fontWeight: FontWeight.w600)),
         ],
       );
@@ -656,8 +656,8 @@ class _StoppedState extends StatelessWidget {
                 Flexible(
                   child: Text(
                     ready
-                        ? 'Recording captured — tap Save to generate the report'
-                        : 'Recording too short — needs at least ${LiveEcgController.minRecordingSeconds}s',
+                        ? 'Recording captured - tap Save to generate the report'
+                        : 'Recording too short - needs at least ${LiveEcgController.minRecordingSeconds}s',
                     style: TextStyle(color: tint, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),
