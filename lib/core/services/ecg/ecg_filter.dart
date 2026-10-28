@@ -41,7 +41,14 @@ class EcgFilter {
   static double filter(int ch, int x, double y) {
     final ecg = EcgData.instance;
     final settings = StorageService.instance;
-    if (settings.filter == 'No') {
+    // Port of `ecgFilter.filter()`: both this FIR band filter and
+    // highPassFilter() below are bypassed in Test Mode so the device's
+    // built-in square calibration pulse reaches the chart with its sharp
+    // edges intact — these filters are tuned for real cardiac signal
+    // bandwidth, and running a step waveform through them rings it into a
+    // spike-and-decay shape that looks like (and used to be mistaken for)
+    // a real QRS complex instead of a calibration square wave.
+    if (settings.filter == 'No' || settings.testMode) {
       ecg.filteredData[x][ch] = y;
       return y;
     }
@@ -58,7 +65,8 @@ class EcgFilter {
 
   static double highPassFilter(int ch, int x, double y) {
     final ecg = EcgData.instance;
-    if (StorageService.instance.filter == 'No') return y;
+    final settings = StorageService.instance;
+    if (settings.filter == 'No' || settings.testMode) return y;
     final highPassFilteredVal = y - ecg.preIirX[ch] + 0.992 * ecg.preIirY[ch];
     ecg.preIirY[ch] = highPassFilteredVal;
     ecg.preIirX[ch] = y;
