@@ -9,7 +9,14 @@ import '../../../theme/app_colors.dart';
 /// Shows only the most recent [visibleSamples] points, matching the
 /// original's `setVisibleXRange`/`moveViewToX` scrolling window.
 class EcgLeadChart extends StatelessWidget {
-  const EcgLeadChart({super.key, required this.leadIndex, required this.visibleSamples, this.height, this.showLabel = true});
+  const EcgLeadChart({
+    super.key,
+    required this.leadIndex,
+    required this.visibleSamples,
+    this.height,
+    this.showLabel = true,
+    this.isOff = false,
+  });
 
   final int leadIndex;
   final int visibleSamples;
@@ -20,6 +27,13 @@ class EcgLeadChart extends StatelessWidget {
   final double? height;
   final bool showLabel;
 
+  /// True when `EcgData.isLeadOff` says this lead's electrode(s) are
+  /// currently disconnected. A floating ADC input rails to its limits, so
+  /// its raw samples are noise that could be mistaken for a real (and
+  /// alarming) rhythm in a medical app — the trace is suppressed and
+  /// replaced with a plain "LEAD OFF" state instead of being drawn.
+  final bool isOff;
+
   @override
   Widget build(BuildContext context) {
     final samples = EcgData.instance.chartData[leadIndex];
@@ -29,18 +43,31 @@ class EcgLeadChart extends StatelessWidget {
       decoration: BoxDecoration(color: AppColors.monitorBg, borderRadius: BorderRadius.circular(10)),
       child: Stack(
         children: [
-          Positioned.fill(child: CustomPaint(painter: _EcgPainter(samples: samples, visibleSamples: visibleSamples))),
+          Positioned.fill(child: CustomPaint(painter: _EcgPainter(samples: samples, visibleSamples: visibleSamples, isOff: isOff))),
           if (showLabel)
             Positioned(
               top: 5,
               left: 7,
               child: Text(
                 EcgData.leadName[leadIndex],
-                style: const TextStyle(
-                  color: AppColors.monitorTrace,
+                style: TextStyle(
+                  color: isOff ? AppColors.brandRed : AppColors.monitorTrace,
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
                 ),
+              ),
+            ),
+          if (isOff)
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sensors_off, color: AppColors.brandRed.withValues(alpha: 0.85), size: 13),
+                  const SizedBox(width: 5),
+                  Text('LEAD OFF',
+                      style: TextStyle(
+                          color: AppColors.brandRed.withValues(alpha: 0.85), fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
+                ],
               ),
             ),
         ],
@@ -50,9 +77,10 @@ class EcgLeadChart extends StatelessWidget {
 }
 
 class _EcgPainter extends CustomPainter {
-  _EcgPainter({required this.samples, required this.visibleSamples});
+  _EcgPainter({required this.samples, required this.visibleSamples, this.isOff = false});
   final List<double> samples;
   final int visibleSamples;
+  final bool isOff;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -63,6 +91,12 @@ class _EcgPainter extends CustomPainter {
       final y = size.height * i / 3;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
+
+    // A disconnected electrode's input floats and rails the ADC — plotting
+    // it would paint a wall of spikes that looks like a real (and
+    // alarming) arrhythmia. Leave the panel blank but gridded; the "LEAD
+    // OFF" overlay built in EcgLeadChart communicates the actual state.
+    if (isOff) return;
 
     if (samples.isEmpty) return;
     final start = samples.length > visibleSamples ? samples.length - visibleSamples : 0;

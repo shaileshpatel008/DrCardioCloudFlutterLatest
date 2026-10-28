@@ -163,7 +163,17 @@ class LiveEcgView extends GetView<LiveEcgController> {
                         (index) => Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 1.5),
-                            child: EcgLeadChart(leadIndex: index, visibleSamples: EcgData.instance.displayDataRangeX),
+                            child: EcgLeadChart(
+                              leadIndex: index,
+                              visibleSamples: EcgData.instance.displayDataRangeX,
+                              // Test Mode's fixed calibration waveform has no
+                              // real electrodes to report on (same condition
+                              // as the lead-off banner above), and a lead
+                              // only reads as off while actively capturing.
+                              isOff: controller.isReading.value &&
+                                  !controller.isTestMode &&
+                                  EcgData.instance.isLeadOff(index),
+                            ),
                           ),
                         ),
                       ),
@@ -187,7 +197,13 @@ class LiveEcgView extends GetView<LiveEcgController> {
                         child: Text('RHYTHM · LEAD II',
                             style: TextStyle(color: AppColors.monitorTrace, fontSize: 10.5, fontWeight: FontWeight.w700)),
                       ),
-                      EcgLeadChart(leadIndex: 1, visibleSamples: EcgData.instance.displayDataRangeX, height: 90, showLabel: false),
+                      EcgLeadChart(
+                        leadIndex: 1,
+                        visibleSamples: EcgData.instance.displayDataRangeX,
+                        height: 90,
+                        showLabel: false,
+                        isOff: controller.isReading.value && !controller.isTestMode && EcgData.instance.isLeadOff(1),
+                      ),
                     ],
                   ),
                 ),

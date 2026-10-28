@@ -75,6 +75,37 @@ class EcgData {
   /// V1,V2,V3,V4,V5,V6,LeftLeg,RightLeg,LeftArm,RightArm). `true` = attached.
   final ValueNotifier<List<bool>> leadStatus = ValueNotifier<List<bool>>(List.filled(10, true));
 
+  /// Which [leadStatus] electrode(s) each displayed lead's waveform is
+  /// derived from — V1-V6 are measured directly off their own channel;
+  /// I/II/III/aVR/aVL/aVF are the standard Einthoven/Goldberger
+  /// combinations of the three limb electrodes (Right Leg is only the
+  /// driven reference, not a measurement input, so it isn't listed here).
+  static const Map<String, List<int>> _leadElectrodes = {
+    'V1': [0], 'V2': [1], 'V3': [2], 'V4': [3], 'V5': [4], 'V6': [5],
+    'I': [9, 8], // Right Arm, Left Arm
+    'II': [9, 6], // Right Arm, Left Leg
+    'III': [8, 6], // Left Arm, Left Leg
+    'aVR': [9, 8, 6],
+    'aVL': [8, 9, 6],
+    'aVF': [6, 9, 8],
+  };
+
+  /// Whether the lead at [displayIndex] (an index into [leadName]) has no
+  /// valid signal right now — any electrode its waveform depends on is
+  /// reporting disconnected. A floating ADC input rails to its limits, so
+  /// that lead's raw samples are noise, not a real (if alarming-looking)
+  /// rhythm — callers should suppress the trace instead of plotting it.
+  bool isLeadOff(int displayIndex) {
+    if (displayIndex < 0 || displayIndex >= leadName.length) return false;
+    final electrodes = _leadElectrodes[leadName[displayIndex]];
+    if (electrodes == null) return false;
+    final status = leadStatus.value;
+    for (final e in electrodes) {
+      if (e < status.length && !status[e]) return true;
+    }
+    return false;
+  }
+
   void resetEcgData() {
     patientId = '';
     patientName = '';
