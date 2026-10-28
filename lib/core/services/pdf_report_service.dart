@@ -232,9 +232,12 @@ class PdfReportService {
                 // "RECORDED" used to repeat here — the date already shows
                 // once, correctly, at the top right of every page (see
                 // _buildLetterhead), so this row no longer duplicates it.
+                // Heart rate isn't shown here either — it's not part of
+                // the old app's patient-info table (`PdfGenerator`), and
+                // it already appears once in the HR/RR/PR/QRS/QT/QTc
+                // measurements line below (see `_buildAnalysisStrip`).
                 pw.Row(children: [
                   _infoField('DEVICE', record.deviceName),
-                  _infoField('HEART RATE', record.hr.isEmpty ? '' : '${record.hr} bpm'),
                 ]),
               ],
             ),
