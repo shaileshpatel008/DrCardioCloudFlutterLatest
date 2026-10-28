@@ -193,7 +193,7 @@ class LiveEcgView extends GetView<LiveEcgController> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 6, 24, 20),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 14),
               // isLoadedMode never changes over this screen's lifetime, so
               // it doesn't belong inside an Obx — and the loaded-mode row
               // reads no observable at all (only _SaveButton's own,
@@ -201,33 +201,40 @@ class LiveEcgView extends GetView<LiveEcgController> {
               // one here left GetX with a build that touched zero
               // observables in that branch, which it treats as a hard
               // error ("improper use of a GetX") rather than a no-op.
-              child: controller.isLoadedMode
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _ControlButton(
-                          icon: Icons.edit_outlined,
-                          label: 'Patient',
-                          enabled: true,
-                          onTap: controller.changePatientData,
-                        ),
-                        _SaveButton(controller: controller),
-                      ],
-                    )
-                  : Obx(() => Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _ControlButton(
-                            icon: Icons.play_arrow,
-                            label: 'Start',
-                            enabled: !controller.isReading.value,
-                            onTap: controller.startRecording,
-                            primary: !controller.isReading.value,
-                          ),
-                          _StopButton(controller: controller),
-                          _SaveButton(controller: controller),
-                        ],
-                      )),
+              child: Center(
+                child: _ControlBarCapsule(
+                  child: controller.isLoadedMode
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ControlButton(
+                              icon: Icons.edit_outlined,
+                              label: 'Patient',
+                              enabled: true,
+                              onTap: controller.changePatientData,
+                            ),
+                            const SizedBox(width: 28),
+                            _SaveButton(controller: controller),
+                          ],
+                        )
+                      : Obx(() => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _ControlButton(
+                                icon: Icons.play_arrow,
+                                label: 'Start',
+                                enabled: !controller.isReading.value,
+                                onTap: controller.startRecording,
+                                primary: !controller.isReading.value,
+                              ),
+                              const SizedBox(width: 28),
+                              _StopButton(controller: controller),
+                              const SizedBox(width: 28),
+                              _SaveButton(controller: controller),
+                            ],
+                          )),
+                ),
+              ),
             ),
           ],
         ),
@@ -370,6 +377,33 @@ class _SheetDropdownRow extends StatelessWidget {
   }
 }
 
+/// Compact pill housing the Start/Stop/Save controls — replaces the old
+/// full-width button row (which, with its 72px primary button and text
+/// labels, ate enough vertical space to visibly shrink the live lead
+/// stack above it). Purely a visual container: the buttons inside keep
+/// exactly the same taps/enablement/validation they always had.
+class _ControlBarCapsule extends StatelessWidget {
+  const _ControlBarCapsule({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Icon-only control button — same size regardless of [primary] now (the
+/// old 72px-vs-52px size jump for Start is gone along with the text
+/// label underneath); [primary] still switches the red/translucent-white
+/// fill so Start reads as the "go" action while idle.
 class _ControlButton extends StatelessWidget {
   const _ControlButton({
     required this.icon,
@@ -377,46 +411,42 @@ class _ControlButton extends StatelessWidget {
     required this.enabled,
     required this.onTap,
     this.primary = false,
-    this.pulsing = false,
     this.loading = false,
   });
+
+  static const _size = 46.0;
 
   final IconData icon;
   final String label;
   final bool enabled;
   final VoidCallback onTap;
   final bool primary;
-  final bool pulsing;
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final size = primary ? 72.0 : 52.0;
-    return Column(
-      children: [
-        Opacity(
-          opacity: enabled ? 1 : 0.4,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(size / 2),
-            onTap: enabled ? onTap : null,
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: primary ? AppColors.brandRed : Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: loading
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Icon(icon, color: Colors.white, size: primary ? 28 : 20),
-              ),
+    return Tooltip(
+      message: label,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.4,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(_size / 2),
+          onTap: enabled ? onTap : null,
+          child: Container(
+            width: _size,
+            height: _size,
+            decoration: BoxDecoration(
+              color: primary ? AppColors.brandRed : Colors.white.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: loading
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Icon(icon, color: Colors.white, size: 21),
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
-      ],
+      ),
     );
   }
 }
@@ -433,38 +463,35 @@ class _SaveButton extends StatelessWidget {
   const _SaveButton({required this.controller});
   final LiveEcgController controller;
 
-  static const _size = 52.0;
+  static const _size = 46.0;
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final ready = controller.canSave;
-      return Column(
-        children: [
-          Opacity(
-            opacity: ready ? 1 : 0.4,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(_size / 2),
-              // Always tappable, even while dimmed/"not ready" — a
-              // disabled (onTap: null) button here just did nothing
-              // when tapped mid-recording, which looked broken.
-              // handleSaveTap() tells the user why instead.
-              onTap: controller.isSaving.value ? null : controller.handleSaveTap,
-              child: Container(
-                width: _size,
-                height: _size,
-                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
-                child: Center(
-                  child: controller.isSaving.value
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.save_outlined, color: Colors.white, size: 20),
-                ),
+      return Tooltip(
+        message: 'Save',
+        child: Opacity(
+          opacity: ready ? 1 : 0.4,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(_size / 2),
+            // Always tappable, even while dimmed/"not ready" — a
+            // disabled (onTap: null) button here just did nothing
+            // when tapped mid-recording, which looked broken.
+            // handleSaveTap() tells the user why instead.
+            onTap: controller.isSaving.value ? null : controller.handleSaveTap,
+            child: Container(
+              width: _size,
+              height: _size,
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
+              child: Center(
+                child: controller.isSaving.value
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_outlined, color: Colors.white, size: 21),
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          const Text('Save', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
-        ],
+        ),
       );
     });
   }
@@ -482,8 +509,8 @@ class _StopButton extends StatelessWidget {
   const _StopButton({required this.controller});
   final LiveEcgController controller;
 
-  static const _size = 52.0;
-  static const _ringSize = 64.0;
+  static const _size = 46.0;
+  static const _ringSize = 52.0;
 
   @override
   Widget build(BuildContext context) {
@@ -496,46 +523,43 @@ class _StopButton extends StatelessWidget {
       final remaining = (1 - controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
       final reachedMinimum = controller.recordedSeconds >= LiveEcgController.minRecordingSeconds;
       final enabled = controller.isReading.value;
-      return Opacity(
-        opacity: enabled ? 1 : 0.4,
-        child: Column(
-          children: [
-            SizedBox(
-              width: _ringSize,
-              height: _ringSize,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: _ringSize,
-                    height: _ringSize,
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 1, end: remaining),
-                      duration: const Duration(milliseconds: 400),
-                      builder: (context, animatedValue, _) => CircularProgressIndicator(
-                        value: animatedValue,
-                        strokeWidth: 3,
-                        backgroundColor: Colors.white.withValues(alpha: 0.08),
-                        valueColor: AlwaysStoppedAnimation(reachedMinimum ? const Color(0xFF3DDC84) : AppColors.brandRed),
-                      ),
+      return Tooltip(
+        message: 'Stop',
+        child: Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: SizedBox(
+            width: _ringSize,
+            height: _ringSize,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: _ringSize,
+                  height: _ringSize,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 1, end: remaining),
+                    duration: const Duration(milliseconds: 400),
+                    builder: (context, animatedValue, _) => CircularProgressIndicator(
+                      value: animatedValue,
+                      strokeWidth: 2.5,
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation(reachedMinimum ? const Color(0xFF3DDC84) : AppColors.brandRed),
                     ),
                   ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(_size / 2),
-                    onTap: enabled ? controller.stopRecording : null,
-                    child: Container(
-                      width: _size,
-                      height: _size,
-                      decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
-                      child: const Icon(Icons.stop, color: Colors.white, size: 20),
-                    ),
+                ),
+                InkWell(
+                  borderRadius: BorderRadius.circular(_size / 2),
+                  onTap: enabled ? controller.stopRecording : null,
+                  child: Container(
+                    width: _size,
+                    height: _size,
+                    decoration: const BoxDecoration(color: AppColors.brandRed, shape: BoxShape.circle),
+                    child: const Icon(Icons.stop, color: Colors.white, size: 21),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text('Stop', style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
-          ],
+          ),
         ),
       );
     });
