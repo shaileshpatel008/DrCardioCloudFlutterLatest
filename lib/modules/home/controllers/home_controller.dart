@@ -151,15 +151,15 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   }
 
   /// Port of `MainActivity`'s "ECG Left" badge tap -> `showRechargeDialog()`
-  /// -> `showQRCodeDialog()` chain.
-  ///
-  /// NOTE: the original only lets the badge do anything when
-  /// `count < 10` (otherwise the tap is a no-op) — that gate is
-  /// deliberately left off here for now, at the client's explicit request,
-  /// so the flow can be tested against a real account that currently has
-  /// hundreds of recordings left. Add `if (reportLimit.value >= 10) return;`
-  /// back at the top of this method once that testing is done.
-  void handleEcgLeftTap(BuildContext context) => _showRechargeFlow(context, reportLimit.value);
+  /// -> `showQRCodeDialog()` chain. Gated to a plan that's actually run
+  /// out (`reportLimit == 0`) — tapping with recordings still left does
+  /// nothing, same as the original ignoring the tap once `count >= 10`
+  /// (this app's own account always has far more than 10 left, so `== 0`
+  /// is the gate that matches how it's actually used here).
+  void handleEcgLeftTap(BuildContext context) {
+    if (reportLimit.value > 0) return;
+    _showRechargeFlow(context, reportLimit.value);
+  }
 
   Future<void> _showRechargeFlow(BuildContext context, int leftCount) async {
     final expired = leftCount <= 0;
