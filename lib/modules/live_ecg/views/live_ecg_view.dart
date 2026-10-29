@@ -211,29 +211,14 @@ class LiveEcgView extends GetView<LiveEcgController> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 14),
               // isLoadedMode never changes over this screen's lifetime, so
-              // it doesn't belong inside an Obx — and the loaded-mode row
-              // reads no observable at all (only _SaveButton's own,
-              // separately-scoped Obx does), so wrapping the whole Row in
-              // one here left GetX with a build that touched zero
-              // observables in that branch, which it treats as a hard
-              // error ("improper use of a GetX") rather than a no-op.
+              // the branch itself stays outside any Obx — each branch
+              // widget owns whatever reactivity it needs internally.
               child: Center(
                 child: controller.isLoadedMode
-                    ? _ControlBarCapsule(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ControlButton(
-                              icon: Icons.edit_outlined,
-                              label: 'Patient',
-                              enabled: true,
-                              onTap: controller.changePatientData,
-                            ),
-                            const SizedBox(width: 28),
-                            _SaveButton(controller: controller),
-                          ],
-                        ),
-                      )
+                    // Both buttons now carry their own label — bare icons
+                    // for "edit" vs "save" looked almost identical and
+                    // didn't communicate what either one did.
+                    ? _LoadedModeActions(controller: controller)
                     // Shows exactly one primary action at a time (Start,
                     // Stop or Save) instead of all three sitting side by
                     // side at equal weight the whole time — a first-time
@@ -385,111 +370,70 @@ class _SheetDropdownRow extends StatelessWidget {
   }
 }
 
-/// Compact pill housing the Start/Stop/Save controls — replaces the old
-/// full-width button row (which, with its 72px primary button and text
-/// labels, ate enough vertical space to visibly shrink the live lead
-/// stack above it). Purely a visual container: the buttons inside keep
-/// exactly the same taps/enablement/validation they always had.
-class _ControlBarCapsule extends StatelessWidget {
-  const _ControlBarCapsule({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: child,
-    );
-  }
-}
-
-/// Icon-only control button — same size regardless of [primary] now (the
-/// old 72px-vs-52px size jump for Start is gone along with the text
-/// label underneath) — now only used for Loaded Data's "Patient" button,
-/// since Start/Stop/Save each moved to their own state-specific widget in
-/// [_LiveControlFlow].
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    required this.icon,
-    required this.label,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  static const _size = 46.0;
-
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Opacity(
-        opacity: enabled ? 1 : 0.4,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(_size / 2),
-          onTap: enabled ? onTap : null,
-          child: Container(
-            width: _size,
-            height: _size,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
-            child: Icon(icon, color: Colors.white, size: 21),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Plain Save button used in Loaded Data mode (alongside the "Patient"
-/// button above) — a fresh recording's Save lives in [_StoppedState]
-/// instead, as the big labeled "Save Report" button. The label always
-/// just reads "Save"; tapping while saving does nothing further, same as
-/// before — see `LiveEcgController.handleSaveTap()`.
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({required this.controller});
+/// Loaded Data's two actions — "Edit Patient" and "Save" — each carrying
+/// its own label. Bare icons for these two looked near-identical and
+/// didn't communicate what either one did; Edit Patient stays a plain
+/// secondary pill while Save mirrors [_StoppedState]'s Save Report button
+/// (green once actionable, i.e. whenever not already mid-save — Loaded
+/// Data has no minimum-duration gate, so `canSave` is only ever false
+/// while `isSaving` is true).
+class _LoadedModeActions extends StatelessWidget {
+  const _LoadedModeActions({required this.controller});
   final LiveEcgController controller;
 
-  static const _size = 46.0;
-
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final ready = controller.canSave;
-      return Tooltip(
-        message: 'Save',
-        child: Opacity(
-          opacity: ready ? 1 : 0.4,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(_size / 2),
-            // Always tappable, even while dimmed/"not ready" — a
-            // disabled (onTap: null) button here just did nothing
-            // when tapped mid-recording, which looked broken.
-            // handleSaveTap() tells the user why instead.
-            onTap: controller.isSaving.value ? null : controller.handleSaveTap,
-            child: Container(
-              width: _size,
-              height: _size,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), shape: BoxShape.circle),
-              child: Center(
-                child: controller.isSaving.value
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.save_outlined, color: Colors.white, size: 21),
-              ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: controller.changePatientData,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(999)),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.edit_outlined, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text('Edit Patient', style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800)),
+              ],
             ),
           ),
         ),
-      );
-    });
+        const SizedBox(width: 14),
+        Obx(() {
+          final ready = controller.canSave;
+          final saving = controller.isSaving.value;
+          return InkWell(
+            borderRadius: BorderRadius.circular(28),
+            // Always tappable, even mid-save-attempt race — handleSaveTap()
+            // is a no-op by then anyway; only an actual in-flight save
+            // (isSaving) disables the tap, same as the Save Report button.
+            onTap: saving ? null : controller.handleSaveTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 15),
+              decoration: BoxDecoration(
+                color: ready ? _kReadyGreen : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (saving)
+                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  else
+                    Icon(Icons.save_outlined, color: ready ? _kReadyGreenInk : Colors.white, size: 19),
+                  const SizedBox(width: 9),
+                  Text('Save', style: TextStyle(color: ready ? _kReadyGreenInk : Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
   }
 }
 
