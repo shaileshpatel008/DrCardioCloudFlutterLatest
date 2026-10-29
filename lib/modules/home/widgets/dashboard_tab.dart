@@ -68,7 +68,7 @@ class DashboardTab extends GetView<HomeController> {
                 ),
               ),
               if (controller.reportLimitEnabled.value) ...[
-                _EcgLeftBadge(count: controller.reportLimit.value),
+                _EcgLeftBadge(count: controller.reportLimit.value, onTap: () => controller.handleEcgLeftTap(context)),
                 const SizedBox(width: 10),
               ],
               CircleAvatar(
@@ -375,25 +375,34 @@ class _EmptyRecentReports extends StatelessWidget {
 /// (`layout_plan_count`/`tvCount`) — redesigned from a bulky red square
 /// (which read like a warning stamp sitting next to the avatar) into a
 /// slim pill that sits naturally in the header row instead of competing
-/// with it.
+/// with it. Tappable, same as the original's `tvCount` — see
+/// `HomeController.handleEcgLeftTap()` for the recharge/QR-code flow.
 class _EcgLeftBadge extends StatelessWidget {
-  const _EcgLeftBadge({required this.count});
+  const _EcgLeftBadge({required this.count, required this.onTap});
   final int count;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(9, 7, 10, 7),
-      decoration: BoxDecoration(color: AppColors.brandRedTint, borderRadius: BorderRadius.circular(999)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.monitor_heart_outlined, size: 15, color: AppColors.brandRed),
-          const SizedBox(width: 5),
-          Text('$count', style: const TextStyle(color: AppColors.brandRedDark, fontSize: 13, fontWeight: FontWeight.w800)),
-          const SizedBox(width: 3),
-          Text('LEFT', style: TextStyle(color: AppColors.brandRed.withValues(alpha: 0.75), fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
-        ],
+    return Material(
+      color: AppColors.brandRedTint,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(9, 7, 10, 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.monitor_heart_outlined, size: 15, color: AppColors.brandRed),
+              const SizedBox(width: 5),
+              Text('$count', style: const TextStyle(color: AppColors.brandRedDark, fontSize: 13, fontWeight: FontWeight.w800)),
+              const SizedBox(width: 3),
+              Text('LEFT', style: TextStyle(color: AppColors.brandRed.withValues(alpha: 0.75), fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,10 +1,12 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/bluetooth/bluetooth_service.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/widgets/app_confirm_sheet.dart';
+import '../../../core/widgets/app_qr_code_sheet.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/remote_report_model.dart';
@@ -135,9 +137,44 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       final user = await _authRepository.refreshToken();
       reportLimitEnabled.value = user.reportLimitEnabled;
       reportLimit.value = user.reportLimit;
+      // Port of `callGetLatestTokenApi()`'s own
+      // `if (report_limit == 0) showRechargeDialog(count);` — the plan
+      // having already run out surfaces the recharge prompt the moment
+      // that's known, not only if/when the user happens to tap the badge.
+      if (user.reportLimitEnabled && user.reportLimit == 0) {
+        final context = Get.context;
+        if (context != null && context.mounted) _showRechargeFlow(context, 0);
+      }
     } catch (e, st) {
       AppLogger.w('Could not refresh report-limit quota', e, st);
     }
+  }
+
+  /// Port of `MainActivity`'s "ECG Left" badge tap -> `showRechargeDialog()`
+  /// -> `showQRCodeDialog()` chain.
+  ///
+  /// NOTE: the original only lets the badge do anything when
+  /// `count < 10` (otherwise the tap is a no-op) — that gate is
+  /// deliberately left off here for now, at the client's explicit request,
+  /// so the flow can be tested against a real account that currently has
+  /// hundreds of recordings left. Add `if (reportLimit.value >= 10) return;`
+  /// back at the top of this method once that testing is done.
+  void handleEcgLeftTap(BuildContext context) => _showRechargeFlow(context, reportLimit.value);
+
+  Future<void> _showRechargeFlow(BuildContext context, int leftCount) async {
+    final expired = leftCount <= 0;
+    final confirmed = await AppConfirmSheet.show(
+      context,
+      icon: Icons.redeem_outlined,
+      title: expired ? 'Plan Expired' : 'Plan Expiring Soon',
+      message: expired
+          ? "Your ECG reporting plan has expired. Recharge to continue receiving doctor-reviewed ECG reports."
+          : 'You have $leftCount ${leftCount == 1 ? 'count' : 'counts'} left in your doctor reporting plan. '
+              'Please recharge soon to continue receiving doctor-reviewed ECG reports.',
+      confirmText: 'Recharge Now',
+      cancelText: 'Later',
+    );
+    if (confirmed && context.mounted) await AppQrCodeSheet.show(context);
   }
 
   /// "View All" on the dashboard's Recent Reports section — Reports is a

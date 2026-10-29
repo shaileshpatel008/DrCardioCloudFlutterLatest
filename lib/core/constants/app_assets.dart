@@ -16,4 +16,9 @@ class AppAssets {
   static const String onboarding1 = 'assets/images/onboarding_1.png';
   static const String onboarding2 = 'assets/images/onboarding_2.png';
   static const String onboarding3 = 'assets/images/onboarding_3.png';
+
+  /// Port of `MainActivity.showQRCodeDialog()`'s static `R.drawable
+  /// .kavitul_upiid` — the company's own pre-made "Scan & Pay" UPI QR
+  /// image (Kavitul Technologies Pvt Ltd), copied as-is from the old app.
+  static const String kavitulUpiQr = 'assets/images/kavitul_upi_qr.png';
 }
