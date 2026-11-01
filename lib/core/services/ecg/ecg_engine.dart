@@ -8,6 +8,7 @@ import '../storage_service.dart';
 import 'ecg_data.dart';
 import 'ecg_filter.dart';
 import 'heart_rate_estimator.dart';
+import 'lead_status_debouncer.dart';
 import 'parse_data.dart';
 
 /// Port of `SupportClass.DataHandlerThread`: turns parsed frames into 12
@@ -43,6 +44,8 @@ class EcgEngine {
   ValueNotifier<int?> get heartRateBpm => _heartRate.bpm;
   void resetHeartRate() => _heartRate.reset();
 
+  final LeadStatusDebouncer _leadStatusDebouncer = LeadStatusDebouncer();
+
   final StreamController<int> _secondTickController = StreamController<int>.broadcast();
   Stream<int> get onSecondTick => _secondTickController.stream;
 
@@ -61,7 +64,13 @@ class EcgEngine {
     }
 
     if (packet.statusBytes.length >= 3) {
-      ecg.leadStatus.value = ParseData.byteArrayToLeadStatus(packet.statusBytes);
+      final raw = ParseData.byteArrayToLeadStatus(packet.statusBytes);
+      // Debounced per electrode before it ever reaches EcgData/the UI —
+      // see LeadStatusDebouncer for why: the raw bit can flip packet to
+      // packet on a marginal contact, and writing that straight through
+      // made the "Electrode off" banner and chart overlay visibly blink.
+      final stable = _leadStatusDebouncer.update(raw, DateTime.now());
+      if (stable != null) ecg.leadStatus.value = stable;
     }
 
     final gain = double.tryParse(settings.actualGain) ?? 1;
