@@ -185,26 +185,40 @@ class ClassicReportBuilder {
     final cellHeight = rowsPerColumn > 6 ? 34.0 : (rowsPerColumn > 4 ? 42.0 : 56.0);
     final gridHeight = cellHeight * rowsPerColumn;
 
+    final colWidth = _contentWidth / columns;
+
     return [
       pw.SizedBox(
         width: _contentWidth,
         height: gridHeight,
+        // Explicit widths/heights throughout (no Expanded) deliberately —
+        // this whole grid sits inside a Stack (for the ecg-paper
+        // background layered behind it), and a non-positioned Stack
+        // child doesn't hand its bounded size down to Expanded
+        // descendants the way a plain bounded parent does: Expanded here
+        // previously saw unbounded height and MultiPage refused to lay
+        // the page out at all ("height (Infinity) exceed a page height").
         child: pw.Stack(
           children: [
             pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: _contentWidth, height: gridHeight)),
             pw.Container(
+              width: _contentWidth,
+              height: gridHeight,
               decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)),
               child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                 children: List.generate(columns, (col) {
-                  return pw.Expanded(
+                  return pw.SizedBox(
+                    width: colWidth,
+                    height: gridHeight,
                     child: pw.Column(
                       children: List.generate(rowsPerColumn, (row) {
                         final index = PdfReportShared.leadIndexForCell(col, row, rowsPerColumn);
                         final leadName = PdfReportShared.leadNameAt(index);
                         final full = PdfReportShared.leadSamplesAt(record, index);
                         final samples = simultaneous ? full : PdfReportShared.sequentialSlice(full, columns, col);
-                        return pw.Expanded(
+                        return pw.SizedBox(
+                          width: colWidth,
+                          height: cellHeight,
                           child: pw.Container(
                             decoration: pw.BoxDecoration(
                               border: pw.Border(right: pw.BorderSide(color: _blueFaint, width: 0.5), bottom: pw.BorderSide(color: _blueFaint, width: 0.5)),
@@ -216,7 +230,7 @@ class ClassicReportBuilder {
                                 left: row == 0 ? 17 : 4,
                                 child: pw.Text(leadName, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue)),
                               ),
-                              pw.Center(child: PdfReportShared.tracePainter(samples, width: _contentWidth / columns, height: cellHeight - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
+                              pw.Center(child: PdfReportShared.tracePainter(samples, width: colWidth, height: cellHeight - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
                             ]),
                           ),
                         );
