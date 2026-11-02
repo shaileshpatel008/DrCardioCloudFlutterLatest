@@ -19,7 +19,13 @@ class ModernDashboardReportBuilder {
   static final _muted2 = PdfColor.fromHex('#9A928E');
 
   static const _pageWidth = 785.89;
-  static const _pageHeight = 539.28;
+
+  /// A4 landscape content height is 539.2756pt (595.2756 - 56pt margins);
+  /// kept a touch under that exact value — using 539.28 here previously
+  /// came out *just* above the real figure due to floating-point
+  /// rounding, and MultiPage's exact-fit check rejected a page that was
+  /// taller than available space by a few thousandths of a point.
+  static const _pageHeight = 539.0;
 
   static void addPages(
     pw.Document doc,
@@ -43,10 +49,39 @@ class ModernDashboardReportBuilder {
     );
   }
 
+  // Fixed heights for every block except the grid, which gets whatever's
+  // left. No Expanded/CrossAxisAlignment.stretch anywhere on this page —
+  // deliberately: MultiPage first measures each page's "natural" size by
+  // laying it out with *unbounded* height (to decide whether it needs a
+  // new page), and a Flex child's flex/stretch resolution against an
+  // unbounded constraint doesn't reliably come back down to the real,
+  // bounded size on the actual paint pass in this pdf package — it
+  // either throws ("height (Infinity)") or, as it did here, silently
+  // collapses the flexed block to almost nothing while the rest of the
+  // page renders as mostly blank space. Precomputed, explicit sizes for
+  // every block sidestep that pass entirely.
+  static const _topRowHeight = 50.0;
+  static const _titleRowHeight = 14.0;
+  static const _rhythmStripHeight = 42.0;
+  static const _bottomRowHeight = 46.0;
+  static const _footerHeight = 9.0;
+
   static pw.Widget _buildPage(EcgRecordModel record, StorageService storage, String reportType, pw.MemoryImage? signatureImage) {
     final simultaneous = reportType.startsWith('Simultaneous');
     final (columns, rowsPerColumn) = PdfReportShared.gridShape(reportType);
     final params = PdfReportShared.analysisItems(record);
+    final hasRhythm = reportType.contains('4x3');
+
+    final fixedHeight = _topRowHeight +
+        8 +
+        _titleRowHeight +
+        6 +
+        (hasRhythm ? (5 + _rhythmStripHeight) : 0) +
+        6 +
+        _bottomRowHeight +
+        4 +
+        _footerHeight;
+    final gridHeight = _pageHeight - fixedHeight;
 
     return pw.SizedBox(
       width: _pageWidth,
@@ -54,42 +89,50 @@ class ModernDashboardReportBuilder {
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          _buildTopRow(record, params),
+          pw.SizedBox(height: _topRowHeight, child: _buildTopRow(record, params)),
           pw.SizedBox(height: 8),
-          pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text('12-Lead ECG', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfReportShared.inkColor)),
-              pw.Row(children: [
-                pw.Text('X = ${storage.xAxisScale}mm/s  Y = 10mm/mV  ${record.filter}  ', style: pw.TextStyle(fontSize: 7.5, color: PdfReportShared.mutedColor)),
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: pw.BoxDecoration(color: PdfReportShared.brandColor, borderRadius: pw.BorderRadius.circular(10)),
-                  child: pw.Text(reportType.toUpperCase(), style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                ),
-              ]),
-            ],
+          pw.SizedBox(
+            height: _titleRowHeight,
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('12-Lead ECG', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfReportShared.inkColor)),
+                pw.Row(children: [
+                  pw.Text('X = ${storage.xAxisScale}mm/s  Y = 10mm/mV  ${record.filter}  ', style: pw.TextStyle(fontSize: 7.5, color: PdfReportShared.mutedColor)),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: pw.BoxDecoration(color: PdfReportShared.brandColor, borderRadius: pw.BorderRadius.circular(10)),
+                    child: pw.Text(reportType.toUpperCase(), style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                  ),
+                ]),
+              ],
+            ),
           ),
           pw.SizedBox(height: 6),
-          pw.Expanded(child: _buildGrid(record, columns: columns, rowsPerColumn: rowsPerColumn, simultaneous: simultaneous)),
-          if (reportType.contains('4x3')) ...[
+          _buildGrid(record, columns: columns, rowsPerColumn: rowsPerColumn, simultaneous: simultaneous, width: _pageWidth, height: gridHeight),
+          if (hasRhythm) ...[
             pw.SizedBox(height: 5),
             _buildRhythmStrip(record, storage.longLead),
           ],
           pw.SizedBox(height: 6),
-          pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              pw.Expanded(child: _buildInterpretationBox()),
-              pw.SizedBox(width: 10),
-              _buildSignatureBox(signatureImage),
-            ],
+          pw.SizedBox(
+            height: _bottomRowHeight,
+            child: pw.Row(
+              children: [
+                pw.SizedBox(width: _pageWidth - 160 - 10, height: _bottomRowHeight, child: _buildInterpretationBox()),
+                pw.SizedBox(width: 10),
+                pw.SizedBox(height: _bottomRowHeight, child: _buildSignatureBox(signatureImage)),
+              ],
+            ),
           ),
           pw.SizedBox(height: 4),
-          pw.Text(
-            'Software calculated values. To be finally confirmed and verified by the doctor.',
-            style: pw.TextStyle(fontSize: 6.5, color: _muted2),
-            textAlign: pw.TextAlign.center,
+          pw.SizedBox(
+            height: _footerHeight,
+            child: pw.Text(
+              'Software calculated values. To be finally confirmed and verified by the doctor.',
+              style: pw.TextStyle(fontSize: 6.5, color: _muted2),
+              textAlign: pw.TextAlign.center,
+            ),
           ),
         ],
       ),
@@ -200,7 +243,16 @@ class ModernDashboardReportBuilder {
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
   }
 
-  static pw.Widget _buildGrid(EcgRecordModel record, {required int columns, required int rowsPerColumn, required bool simultaneous}) {
+  static pw.Widget _buildGrid(
+    EcgRecordModel record, {
+    required int columns,
+    required int rowsPerColumn,
+    required bool simultaneous,
+    required double width,
+    required double height,
+  }) {
+    final colWidth = width / columns;
+    final cellHeight = height / rowsPerColumn;
     final columnWidgets = <pw.Widget>[];
     for (var col = 0; col < columns; col++) {
       final cells = <pw.Widget>[];
@@ -209,20 +261,22 @@ class ModernDashboardReportBuilder {
         final leadName = PdfReportShared.leadNameAt(index);
         final full = PdfReportShared.leadSamplesAt(record, index);
         final samples = simultaneous ? full : PdfReportShared.sequentialSlice(full, columns, col);
-        cells.add(pw.Expanded(
+        cells.add(pw.SizedBox(
+          width: colWidth,
+          height: cellHeight,
           child: pw.Container(
             margin: const pw.EdgeInsets.all(2.5),
             decoration: pw.BoxDecoration(color: _cellBg, borderRadius: pw.BorderRadius.circular(5)),
             child: pw.Stack(children: [
               pw.Positioned(top: 3, left: 5, child: pw.Text(leadName, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfReportShared.inkColor))),
-              pw.Center(child: PdfReportShared.tracePainter(samples, width: (_pageWidth - 8 * columns) / columns, height: 34, color: PdfColor.fromHex('#2B2A29'), strokeWidth: 0.7)),
+              pw.Center(child: PdfReportShared.tracePainter(samples, width: colWidth - 5, height: cellHeight - 10, color: PdfColor.fromHex('#2B2A29'), strokeWidth: 0.7)),
             ]),
           ),
         ));
       }
-      columnWidgets.add(pw.Expanded(child: pw.Column(children: cells)));
+      columnWidgets.add(pw.SizedBox(width: colWidth, height: height, child: pw.Column(children: cells)));
     }
-    return pw.Row(crossAxisAlignment: pw.CrossAxisAlignment.stretch, children: columnWidgets);
+    return pw.SizedBox(width: width, height: height, child: pw.Row(children: columnWidgets));
   }
 
   static pw.Widget _buildRhythmStrip(EcgRecordModel record, String longLead) {

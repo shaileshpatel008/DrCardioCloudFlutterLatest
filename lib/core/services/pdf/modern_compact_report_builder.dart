@@ -21,7 +21,13 @@ class ModernCompactReportBuilder {
   static final _tileTint = PdfColor.fromHex('#F08A7D');
 
   static const _pageWidth = 785.89;
-  static const _pageHeight = 539.28;
+
+  /// A4 landscape content height is 539.2756pt (595.2756 - 56pt margins);
+  /// kept a touch under that exact value — using 539.28 here previously
+  /// came out *just* above the real figure due to floating-point
+  /// rounding, and MultiPage's exact-fit check rejected a page that was
+  /// taller than available space by a few thousandths of a point.
+  static const _pageHeight = 539.0;
   static const _sidebarWidth = 170.0;
 
   static void addPages(

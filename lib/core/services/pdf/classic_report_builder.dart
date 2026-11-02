@@ -109,8 +109,15 @@ class ClassicReportBuilder {
 
     return pw.Container(
       decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8), borderRadius: pw.BorderRadius.circular(3)),
+      // No crossAxisAlignment.stretch here — this Container has no
+      // explicit height, so when MultiPage measures this widget's
+      // natural size (which it does by first giving it an *unbounded*
+      // height, to see how tall it wants to be), "stretch children to
+      // the Row's own height" meant "stretch to Infinity", which is the
+      // actual root cause of the report-wide crash (the grid below
+      // already had an explicit height and was never the problem — this
+      // info box, with none, was).
       child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
             cell(
               'PATIENT INFO',
@@ -187,60 +194,58 @@ class ClassicReportBuilder {
 
     final colWidth = _contentWidth / columns;
 
+    // No grid-wide Stack/Positioned.fill here on purpose (that was the
+    // actual bug, found after the first fix — which only removed
+    // Expanded — didn't stop the "height (Infinity)" crash: a Stack
+    // covering the *whole* grid, with a Positioned.fill background
+    // behind a separately-built Row/Column/SizedBox content tree, still
+    // came out unbounded in this pdf package's layout engine even with
+    // no Expanded left anywhere in that tree). Each cell now paints its
+    // own small ecg-paper background inside its own small Stack instead
+    // — the same shape (Positioned + Center children only, explicit
+    // SizedBox size on the Stack's container) already used without
+    // issue by the other 3 report formats' per-cell Stacks.
     return [
-      pw.SizedBox(
+      pw.Container(
         width: _contentWidth,
         height: gridHeight,
-        // Explicit widths/heights throughout (no Expanded) deliberately —
-        // this whole grid sits inside a Stack (for the ecg-paper
-        // background layered behind it), and a non-positioned Stack
-        // child doesn't hand its bounded size down to Expanded
-        // descendants the way a plain bounded parent does: Expanded here
-        // previously saw unbounded height and MultiPage refused to lay
-        // the page out at all ("height (Infinity) exceed a page height").
-        child: pw.Stack(
-          children: [
-            pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: _contentWidth, height: gridHeight)),
-            pw.Container(
-              width: _contentWidth,
+        decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)),
+        child: pw.Row(
+          children: List.generate(columns, (col) {
+            return pw.SizedBox(
+              width: colWidth,
               height: gridHeight,
-              decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)),
-              child: pw.Row(
-                children: List.generate(columns, (col) {
+              child: pw.Column(
+                children: List.generate(rowsPerColumn, (row) {
+                  final index = PdfReportShared.leadIndexForCell(col, row, rowsPerColumn);
+                  final leadName = PdfReportShared.leadNameAt(index);
+                  final full = PdfReportShared.leadSamplesAt(record, index);
+                  final samples = simultaneous ? full : PdfReportShared.sequentialSlice(full, columns, col);
                   return pw.SizedBox(
                     width: colWidth,
-                    height: gridHeight,
-                    child: pw.Column(
-                      children: List.generate(rowsPerColumn, (row) {
-                        final index = PdfReportShared.leadIndexForCell(col, row, rowsPerColumn);
-                        final leadName = PdfReportShared.leadNameAt(index);
-                        final full = PdfReportShared.leadSamplesAt(record, index);
-                        final samples = simultaneous ? full : PdfReportShared.sequentialSlice(full, columns, col);
-                        return pw.SizedBox(
-                          width: colWidth,
-                          height: cellHeight,
-                          child: pw.Container(
-                            decoration: pw.BoxDecoration(
-                              border: pw.Border(right: pw.BorderSide(color: _blueFaint, width: 0.5), bottom: pw.BorderSide(color: _blueFaint, width: 0.5)),
-                            ),
-                            child: pw.Stack(children: [
-                              if (row == 0) pw.Positioned(top: 3, left: 2, child: _calibrationMark(cellHeight - 10)),
-                              pw.Positioned(
-                                top: 3,
-                                left: row == 0 ? 17 : 4,
-                                child: pw.Text(leadName, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue)),
-                              ),
-                              pw.Center(child: PdfReportShared.tracePainter(samples, width: colWidth, height: cellHeight - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
-                            ]),
+                    height: cellHeight,
+                    child: pw.Stack(children: [
+                      pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: colWidth, height: cellHeight)),
+                      pw.Positioned.fill(
+                        child: pw.Container(
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border(right: pw.BorderSide(color: _blueFaint, width: 0.5), bottom: pw.BorderSide(color: _blueFaint, width: 0.5)),
                           ),
-                        );
-                      }),
-                    ),
+                        ),
+                      ),
+                      if (row == 0) pw.Positioned(top: 3, left: 2, child: _calibrationMark(cellHeight - 10)),
+                      pw.Positioned(
+                        top: 3,
+                        left: row == 0 ? 17 : 4,
+                        child: pw.Text(leadName, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue)),
+                      ),
+                      pw.Center(child: PdfReportShared.tracePainter(samples, width: colWidth, height: cellHeight - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
+                    ]),
                   );
                 }),
               ),
-            ),
-          ],
+            );
+          }),
         ),
       ),
       if (reportType.contains('4x3')) ...[
@@ -269,22 +274,18 @@ class ClassicReportBuilder {
     final index = _longLeadIndex(longLead);
     final samples = PdfReportShared.leadSamplesAt(record, index);
     const height = 58.0;
+    // One flat Stack (not one Stack nested inside another) — see the
+    // comment on the lead grid above for why that nesting was the bug.
     return pw.SizedBox(
       width: _contentWidth,
       height: height,
-      child: pw.Stack(
-        children: [
-          pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: _contentWidth, height: height)),
-          pw.Container(
-            decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)),
-            child: pw.Stack(children: [
-              pw.Positioned(top: 4, left: 4, child: _calibrationMark(height - 14)),
-              pw.Positioned(top: 4, left: 19, child: pw.Text(longLead, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue))),
-              pw.Center(child: PdfReportShared.tracePainter(samples, width: _contentWidth, height: height - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
-            ]),
-          ),
-        ],
-      ),
+      child: pw.Stack(children: [
+        pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: _contentWidth, height: height)),
+        pw.Positioned.fill(child: pw.Container(decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)))),
+        pw.Positioned(top: 4, left: 4, child: _calibrationMark(height - 14)),
+        pw.Positioned(top: 4, left: 19, child: pw.Text(longLead, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue))),
+        pw.Center(child: PdfReportShared.tracePainter(samples, width: _contentWidth, height: height - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
+      ]),
     );
   }
 
