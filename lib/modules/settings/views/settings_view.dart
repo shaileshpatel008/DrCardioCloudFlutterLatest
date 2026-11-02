@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/services/pdf/report_format.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/settings_controller.dart';
@@ -107,12 +108,15 @@ class SettingsView extends GetView<SettingsController> {
                 options: SettingsController.longLeadOptions,
                 onChanged: controller.setLongLead,
               )),
+          const Divider(height: 1),
+          _ReportFormatRow(controller: controller),
         ]),
         const Padding(
           padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
           child: Text(
             'Report type controls the PDF\'s lead layout — one page is generated per selected type. '
-            'Long lead is which lead the full-width rhythm strip at the bottom plots.',
+            'Long lead is which lead the full-width rhythm strip at the bottom plots. '
+            'Report format is the overall look of the PDF — applies to every report generated from now on.',
             style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
@@ -273,6 +277,187 @@ class _ReportTypeRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Port of the client-approved mockup's Settings row + picker flow — opens
+/// a bottom sheet with one card per [ReportFormat], each carrying a small
+/// schematic preview so the choice doesn't rely on name alone. Single-
+/// select, applies immediately on tap (same as every other Settings
+/// control here) rather than needing a separate confirm step.
+class _ReportFormatRow extends StatelessWidget {
+  const _ReportFormatRow({required this.controller});
+  final SettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() => ListTile(
+          leading: const _IconChip(Icons.description_outlined),
+          title: const Text('Report format', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+          subtitle: Text(
+            controller.reportFormat.value.label,
+            style: const TextStyle(fontSize: 11.5, color: AppColors.muted2, fontWeight: FontWeight.w600),
+          ),
+          trailing: const Icon(Icons.chevron_right, size: 18, color: AppColors.muted2),
+          onTap: () => _showReportFormatSheet(context),
+        ));
+  }
+
+  void _showReportFormatSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 18),
+                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const Text('Report Format', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(height: 4),
+              const Text(
+                'Applies to every report generated from now on',
+                style: TextStyle(color: AppColors.muted, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 14),
+              Obx(() => Column(
+                    children: ReportFormat.values
+                        .map((format) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: _FormatCard(
+                                format: format,
+                                selected: controller.reportFormat.value == format,
+                                onTap: () => controller.setReportFormat(format),
+                              ),
+                            ))
+                        .toList(),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormatCard extends StatelessWidget {
+  const _FormatCard({required this.format, required this.selected, required this.onTap});
+  final ReportFormat format;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: selected ? AppColors.brandRed : AppColors.border, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            children: [
+              _FormatThumbnail(format: format),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(format.label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: AppColors.ink)),
+                    const SizedBox(height: 2),
+                    Text(format.description, style: const TextStyle(fontSize: 11, color: AppColors.muted, fontWeight: FontWeight.w600, height: 1.3)),
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: selected ? AppColors.brandRed : AppColors.border,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tiny schematic stand-in for each format's actual look — not a real
+/// render of the PDF, just enough to tell the four apart at a glance (the
+/// same visual shorthand as the approved mockup's picker cards).
+class _FormatThumbnail extends StatelessWidget {
+  const _FormatThumbnail({required this.format});
+  final ReportFormat format;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 60,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+        color: format == ReportFormat.classic ? const Color(0xFFFBD9E3) : Colors.white,
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: format == ReportFormat.modernCompact ? 0 : 10,
+            color: switch (format) {
+              ReportFormat.classic => const Color(0xFF2C3FB0),
+              ReportFormat.modernClean => AppColors.brandRed,
+              ReportFormat.modernDashboard => const Color(0xFFF6F4F1),
+              ReportFormat.modernCompact => Colors.transparent,
+            },
+          ),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (format == ReportFormat.modernCompact) Container(width: 12, color: AppColors.ink),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 2,
+                      crossAxisSpacing: 2,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: List.generate(
+                        6,
+                        (_) => Container(
+                          decoration: BoxDecoration(
+                            color: (format == ReportFormat.classic ? Colors.black : AppColors.ink).withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

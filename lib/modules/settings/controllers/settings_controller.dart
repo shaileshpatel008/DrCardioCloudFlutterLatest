@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/services/app_logger.dart';
 import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_filter.dart';
+import '../../../core/services/pdf/report_format.dart';
 import '../../../core/services/storage_service.dart';
 
 class SettingsController extends GetxController {
@@ -57,6 +58,11 @@ class SettingsController extends GetxController {
   /// = true` default), same as the original.
   final RxList<String> reportTypes = <String>[].obs;
 
+  /// Which of the 4 PDF layouts to generate with — Settings' "Report
+  /// Format" picker, one global default applied to every future
+  /// recording. See `StorageService.reportFormat`/`ReportFormat`.
+  final Rx<ReportFormat> reportFormat = ReportFormat.classic.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -70,6 +76,12 @@ class SettingsController extends GetxController {
     patientInfoFirst.value = storage.patientInfoFirst;
     final savedTypes = storage.reportTypes.where(reportTypeOptions.contains).toList();
     reportTypes.assignAll(savedTypes.isEmpty ? ['Simultaneous 4x3'] : savedTypes);
+    reportFormat.value = ReportFormat.fromStorageKey(storage.reportFormat);
+  }
+
+  void setReportFormat(ReportFormat value) {
+    reportFormat.value = value;
+    storage.reportFormat = value.name;
   }
 
   void setFilter(String value) {

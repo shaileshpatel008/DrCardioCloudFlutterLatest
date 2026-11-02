@@ -118,6 +118,13 @@ class StorageService {
 
   set reportTypes(List<String> v) => _box.write('settings_report_types', v);
 
+  /// Which of the 4 PDF report layouts to generate with — one global
+  /// default applied to every future recording, changed from Settings'
+  /// "Report Format" picker. Stores a [ReportFormat.name]; defaults to
+  /// 'classic' (the familiar pink-grid layout hospitals already know).
+  String get reportFormat => _box.read('settings_report_format') ?? 'classic';
+  set reportFormat(String v) => _box.write('settings_report_format', v);
+
   String get doctorSignaturePath => _box.read('settings_doctor_signature_path') ?? '';
   set doctorSignaturePath(String v) => _box.write('settings_doctor_signature_path', v);
 
