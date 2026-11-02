@@ -69,6 +69,41 @@ void main() {
     });
   });
 
+  group('EcgData lead indexing (client-reported: is lead N plotted as lead N in the PDF?)', () {
+    // Every chart/report consumer (EcgLeadChart, PdfReportService's lead
+    // grid and rhythm strip, EcgAnalysisService) looks up a lead's name
+    // and its data with the SAME index into EcgData.leadName /
+    // chartData-or-leadData — they can never disagree with each other by
+    // construction, but only if leadArrange (which raw hardware channel
+    // each clinical index actually reads) and leadName (what each index
+    // is labelled) both stay in this exact order. Pins both down
+    // byte-for-byte against the old app's `ecgData.lead_arrange`/
+    // `lead_name` so a future edit to either can't silently swap two
+    // leads' data without a test failing here.
+    test('leadArrange matches ecgData.lead_arrange = {1,2,8,9,10,11,7,3,5,4,6,0} exactly', () {
+      expect(EcgData.leadArrange, [1, 2, 8, 9, 10, 11, 7, 3, 5, 4, 6, 0]);
+    });
+
+    test('leadName is the standard clinical order the 4x3 grid groups column-major', () {
+      expect(EcgData.leadName, ['I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']);
+    });
+
+    test('4x3 report columns group I/II/III, aVR/aVL/aVF, V1/V2/V3, V4/V5/V6', () {
+      // PdfReportService._buildLeadGrid's `index = col * rowsPerColumn +
+      // row` (rowsPerColumn == 3 for "NxM" == 4x3) is the same mapping as
+      // the old app's `draw4x3Graphs()` (`col = floor(ch/rows), row = ch
+      // % rows`, rows == 3) — both pick cell (col,row)'s lead as
+      // leadName[col*3 + row], so this directly checks what ends up in
+      // each printed column.
+      const rowsPerColumn = 3;
+      List<String> column(int col) => List.generate(rowsPerColumn, (row) => EcgData.leadName[col * rowsPerColumn + row]);
+      expect(column(0), ['I', 'II', 'III']);
+      expect(column(1), ['aVR', 'aVL', 'aVF']);
+      expect(column(2), ['V1', 'V2', 'V3']);
+      expect(column(3), ['V4', 'V5', 'V6']);
+    });
+  });
+
   group('FIR coefficients', () {
     test('each bank has the expected 201 taps (order 200) and is symmetric', () {
       for (final bank in [firB150, firB40, firB540, firB25, firB525]) {
