@@ -10,24 +10,24 @@ void main() {
       expect(result, [true, false, true]);
     });
 
-    test('ignores a brief flip that reverts before the hold duration', () {
-      final debouncer = LeadStatusDebouncer(holdDuration: const Duration(milliseconds: 400));
+    test('ignores a brief flip that reverts before enough off-exposure accumulates', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3);
       var now = DateTime(2026);
       debouncer.update([true, true], now); // initial: both on
 
-      // Electrode 1 flickers off for 150ms, well under the hold window...
-      now = now.add(const Duration(milliseconds: 150));
+      // Electrode 1 flips off for only 100ms, under the 0.3s threshold...
+      now = now.add(const Duration(milliseconds: 100));
       var result = debouncer.update([true, false], now);
       expect(result, isNull, reason: 'a brief flip should not commit yet');
 
-      // ...then flickers back on before it ever held steady.
+      // ...then flips back on before accumulating enough off-exposure.
       now = now.add(const Duration(milliseconds: 100));
       result = debouncer.update([true, true], now);
-      expect(result, isNull, reason: 'reverting before the hold window should never commit the flip');
+      expect(result, isNull, reason: 'reverting before the threshold should never commit the flip');
     });
 
-    test('commits a change once it holds steady for the full duration', () {
-      final debouncer = LeadStatusDebouncer(holdDuration: const Duration(milliseconds: 400));
+    test('commits a change once accumulated off-exposure crosses the threshold', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3);
       var now = DateTime(2026);
       debouncer.update([true, true], now);
 
@@ -35,28 +35,85 @@ void main() {
       var result = debouncer.update([true, false], now);
       expect(result, isNull);
 
-      // Same reading keeps arriving; 450ms after the flip first appeared
-      // (i.e. since `now.add(200ms)` above) is past the 400ms hold window.
+      // 450ms of continuous off-exposure since the flip first appeared —
+      // past the 0.3s threshold.
       now = now.add(const Duration(milliseconds: 450));
       result = debouncer.update([true, false], now);
       expect(result, [true, false]);
     });
 
+    test('a continuously flickering electrode still commits to OFF eventually '
+        '(the real bug a pure "wait for unbroken stability" design had: it '
+        'never commits anything if the raw signal never holds still)', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3, capSeconds: 2.0);
+      var now = DateTime(2026);
+      debouncer.update([true], now);
+
+      // Toggle off/on every 50ms, spending slightly more time off than on
+      // each cycle (30ms off, 20ms on) — never once holding still for
+      // anywhere near 300ms, the way a real marginal connection might.
+      List<bool>? lastResult;
+      for (var cycle = 0; cycle < 40; cycle++) {
+        now = now.add(const Duration(milliseconds: 30));
+        lastResult = debouncer.update([false], now) ?? lastResult;
+        now = now.add(const Duration(milliseconds: 20));
+        lastResult = debouncer.update([true], now) ?? lastResult;
+      }
+
+      expect(lastResult, [false], reason: 'sustained net off-exposure across many flickers should eventually flag the electrode off');
+    });
+
+    test('a single stray off reading amid solid connection never commits', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3);
+      var now = DateTime(2026);
+      debouncer.update([true], now);
+
+      for (var i = 0; i < 20; i++) {
+        now = now.add(const Duration(milliseconds: 50));
+        final raw = i == 10 ? [false] : [true]; // one lone blip
+        final result = debouncer.update(raw, now);
+        expect(result, isNull, reason: 'a single isolated reading should never be enough to flip the committed state');
+      }
+    });
+
+    test('recovering to attached needs off-exposure to decay back down, not just one good reading', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3, offThresholdSeconds: 0.0);
+      var now = DateTime(2026);
+      debouncer.update([true], now);
+
+      // Drive it off first.
+      now = now.add(const Duration(milliseconds: 400));
+      final offResult = debouncer.update([false], now);
+      expect(offResult, [false]);
+
+      // One good reading right after shouldn't instantly clear 400ms of
+      // accumulated exposure.
+      now = now.add(const Duration(milliseconds: 10));
+      final tooSoon = debouncer.update([true], now);
+      expect(tooSoon, isNull, reason: 'exposure needs time to decay, not just a single on reading');
+
+      // Sustained good contact for long enough to fully decay back to 0.
+      now = now.add(const Duration(milliseconds: 500));
+      final recovered = debouncer.update([true], now);
+      expect(recovered, [true]);
+    });
+
     test('tracks each electrode independently', () {
-      final debouncer = LeadStatusDebouncer(holdDuration: const Duration(milliseconds: 400));
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3);
       var now = DateTime(2026);
       debouncer.update([true, true, true], now);
 
-      // Electrode 0 goes off and stays off; electrode 2 flickers.
+      // Electrode 0 goes off and stays off; electrode 2 only flickers
+      // briefly and recovers before accumulating enough exposure.
       now = now.add(const Duration(milliseconds: 100));
       debouncer.update([false, true, false], now);
       now = now.add(const Duration(milliseconds: 100));
-      debouncer.update([false, true, true], now); // electrode 2 reverted
-      now = now.add(const Duration(milliseconds: 450));
+      debouncer.update([false, true, true], now); // electrode 2 back on
+      now = now.add(const Duration(milliseconds: 150));
       final result = debouncer.update([false, true, true], now);
 
-      // Only electrode 0's change (held since the first flip, ~650ms ago)
-      // should have committed; electrode 2 never held steady long enough.
+      // Only electrode 0's change (350ms+ of continuous off-exposure)
+      // should have committed; electrode 2 never held off long enough.
       expect(result, [false, true, true]);
     });
   });
