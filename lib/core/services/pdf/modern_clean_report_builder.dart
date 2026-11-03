@@ -15,6 +15,8 @@ import 'pdf_report_shared.dart';
 class ModernCleanReportBuilder {
   ModernCleanReportBuilder._();
 
+  /// A4 landscape (841.89pt) minus 28pt margins each side.
+  static const _contentWidth = 785.89;
 
   static void addPages(
     pw.Document doc,
@@ -67,6 +69,7 @@ class ModernCleanReportBuilder {
     return [
       pw.SizedBox(height: 10),
       _buildPatientInfoTable(record, photoImage),
+      ..._buildWarningBanner(record),
       if (notesBlock != null) ...[
         pw.SizedBox(height: 8),
         notesBlock,
@@ -92,6 +95,11 @@ class ModernCleanReportBuilder {
       pw.SizedBox(height: 16),
       _buildCalibrationFooter(record, storage),
     ];
+  }
+
+  static List<pw.Widget> _buildWarningBanner(EcgRecordModel record) {
+    final banner = PdfReportShared.placementWarningBanner(record.leadPlacementWarnings, width: _contentWidth);
+    return banner == null ? const [] : [pw.SizedBox(height: 8), banner];
   }
 
   static pw.Widget _buildLetterhead(StorageService storage, EcgRecordModel record) {

@@ -5,6 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../data/models/ecg_record_model.dart';
 import '../ecg/ecg_data.dart';
+import '../ecg/lead_placement_checker.dart';
 
 /// Pieces every [ReportFormat] builder shares: brand colors, the lead-trace
 /// painter, the column-major lead/cell index math, and small data-shaping
@@ -19,6 +20,36 @@ class PdfReportShared {
   static final inkColor = PdfColor.fromHex('#201F1E');
   static final mutedColor = PdfColor.fromHex('#6B6B6B');
   static final borderColor = PdfColor.fromHex('#E5E5E5');
+
+  static final warningBg = PdfColor.fromHex('#FBE7C6');
+  static final warningBorder = PdfColor.fromHex('#E6A02F');
+  static final warningInk = PdfColor.fromHex('#8A5A10');
+
+  /// A fixed-height, single-line advisory banner naming the first
+  /// detected [LeadPlacementWarning], or `null` when there's nothing to
+  /// show. Deliberately a plain `Container`/`Text` with an explicit
+  /// height — never `Expanded`/`stretch` — since any flex child here
+  /// would be measured against an *unbounded* height on MultiPage's
+  /// natural-size pass (the exact cause of this report's past "height
+  /// (Infinity)" crash); callers must still add [height] to their own
+  /// fixed-size budget wherever they already precompute one.
+  static pw.Widget? placementWarningBanner(List<LeadPlacementWarning> warnings, {required double width, double height = 20}) {
+    if (warnings.isEmpty) return null;
+    final w = warnings.first;
+    return pw.Container(
+      width: width,
+      height: height,
+      alignment: pw.Alignment.centerLeft,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10),
+      decoration: pw.BoxDecoration(color: warningBg, border: pw.Border.all(color: warningBorder, width: 1), borderRadius: pw.BorderRadius.circular(5)),
+      child: pw.Text(
+        '${w.title} (${w.electrodes.join('/')}) - verify before clinical use',
+        maxLines: 1,
+        overflow: pw.TextOverflow.clip,
+        style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: warningInk),
+      ),
+    );
+  }
 
   /// Grid shape for a report type name ("NxM"): 6x2 -> 2 columns of 6,
   /// 12x1 -> 1 column of 12, else (4x3) -> 4 columns of 3. See

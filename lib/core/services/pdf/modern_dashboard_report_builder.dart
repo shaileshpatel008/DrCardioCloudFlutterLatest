@@ -65,15 +65,18 @@ class ModernDashboardReportBuilder {
   static const _rhythmStripHeight = 42.0;
   static const _bottomRowHeight = 46.0;
   static const _footerHeight = 9.0;
+  static const _warningBannerHeight = 18.0;
 
   static pw.Widget _buildPage(EcgRecordModel record, StorageService storage, String reportType, pw.MemoryImage? signatureImage) {
     final simultaneous = reportType.startsWith('Simultaneous');
     final (columns, rowsPerColumn) = PdfReportShared.gridShape(reportType);
     final params = PdfReportShared.analysisItems(record);
     final hasRhythm = reportType.contains('4x3');
+    final warningBanner = PdfReportShared.placementWarningBanner(record.leadPlacementWarnings, width: _pageWidth, height: _warningBannerHeight);
 
     final fixedHeight = _topRowHeight +
         8 +
+        (warningBanner != null ? (_warningBannerHeight + 6) : 0) +
         _titleRowHeight +
         6 +
         (hasRhythm ? (5 + _rhythmStripHeight) : 0) +
@@ -91,6 +94,10 @@ class ModernDashboardReportBuilder {
         children: [
           pw.SizedBox(height: _topRowHeight, child: _buildTopRow(record, params)),
           pw.SizedBox(height: 8),
+          if (warningBanner != null) ...[
+            warningBanner,
+            pw.SizedBox(height: 6),
+          ],
           pw.SizedBox(
             height: _titleRowHeight,
             child: pw.Row(

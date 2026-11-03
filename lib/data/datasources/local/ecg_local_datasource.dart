@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../../core/services/ecg/lead_placement_checker.dart';
 import '../../models/ecg_record_model.dart';
 import '../../models/patient_model.dart';
 
@@ -24,7 +25,7 @@ class EcgLocalDataSource {
     final dbPath = p.join(dir.path, 'drcardio.db');
     _db = await openDatabase(
       dbPath,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE $_table (
@@ -44,7 +45,8 @@ class EcgLocalDataSource {
             longitude TEXT,
             address TEXT,
             hr TEXT, r TEXT, rr TEXT, pr TEXT, qrs TEXT, qt TEXT, qtc TEXT, qt_by_qtc TEXT,
-            sync_status TEXT
+            sync_status TEXT,
+            lead_warnings_json TEXT
           )
         ''');
       },
@@ -54,6 +56,9 @@ class EcgLocalDataSource {
         }
         if (oldVersion < 3) {
           await db.execute('ALTER TABLE $_table ADD COLUMN filtered_csv_path TEXT');
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE $_table ADD COLUMN lead_warnings_json TEXT');
         }
       },
     );
@@ -123,6 +128,7 @@ class EcgLocalDataSource {
         'qtc': r.qtc,
         'qt_by_qtc': r.qtByQtc,
         'sync_status': r.syncStatus.name,
+        'lead_warnings_json': jsonEncode(r.leadPlacementWarnings.map((w) => w.toJson()).toList()),
       };
 
   EcgRecordModel _fromRow(Map<String, dynamic> row) {
@@ -152,6 +158,16 @@ class EcgLocalDataSource {
       qtc: row['qtc'] as String? ?? '',
       qtByQtc: row['qt_by_qtc'] as String? ?? '',
       syncStatus: SyncStatus.values.byName(row['sync_status'] as String? ?? 'pending'),
+      leadPlacementWarnings: _parseWarnings(row['lead_warnings_json'] as String?),
     );
+  }
+
+  // Null for any row written before this column existed (pre-migration) —
+  // treat that the same as "nothing detected" rather than failing to load
+  // the record at all.
+  List<LeadPlacementWarning> _parseWarnings(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    final decoded = jsonDecode(json) as List;
+    return decoded.map((w) => LeadPlacementWarning.fromJson(w as Map<String, dynamic>)).toList();
   }
 }

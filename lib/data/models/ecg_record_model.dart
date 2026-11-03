@@ -1,3 +1,4 @@
+import '../../core/services/ecg/lead_placement_checker.dart';
 import 'patient_model.dart';
 
 enum SyncStatus { synced, pending, failed, offline }
@@ -32,6 +33,7 @@ class EcgRecordModel {
     this.qtc = '',
     this.qtByQtc = '',
     this.syncStatus = SyncStatus.pending,
+    this.leadPlacementWarnings = const [],
   });
 
   final String id;
@@ -69,6 +71,13 @@ class EcgRecordModel {
   final String qtc;
   final String qtByQtc;
 
+  /// Suspected electrode-placement problems (limb/chest swaps) detected
+  /// live while this was recorded — see `LeadPlacementChecker`. Carried
+  /// through to the PDF report so a misplaced-electrode recording
+  /// documents its own caveat instead of looking like a silent wrong
+  /// result.
+  final List<LeadPlacementWarning> leadPlacementWarnings;
+
   SyncStatus syncStatus;
 
   EcgRecordModel copyWith({
@@ -104,6 +113,7 @@ class EcgRecordModel {
       qtc: qtc,
       qtByQtc: qtByQtc,
       syncStatus: syncStatus ?? this.syncStatus,
+      leadPlacementWarnings: leadPlacementWarnings,
     );
   }
 }

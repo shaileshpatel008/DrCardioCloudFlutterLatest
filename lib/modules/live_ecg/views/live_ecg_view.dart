@@ -144,6 +144,45 @@ class LiveEcgView extends GetView<LiveEcgController> {
                 );
               },
             ),
+            // Distinct from the "Electrode off" banner above on purpose —
+            // this is an advisory (the signal looks like a textbook
+            // misplacement pattern), not a hard disconnect, and
+            // LeadPlacementChecker already stays silent whenever a
+            // relevant electrode is off, so the two never compete for the
+            // same root cause.
+            Obx(() {
+              if (controller.isTestMode || !controller.isReading.value || controller.leadPlacementWarnings.isEmpty) return const SizedBox.shrink();
+              final warning = controller.leadPlacementWarnings.first;
+              return Container(
+                margin: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(color: AppColors.toastWarning.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 1),
+                      child: Icon(Icons.swap_horiz, color: AppColors.toastWarning, size: 15),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(warning.title,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: AppColors.toastWarning, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                          Text(warning.message,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: AppColors.toastWarning.withValues(alpha: 0.85), fontSize: 9.5)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
             // Single-column, full-remaining-height stack of all 12 leads —
             // matches `act_new_ecg.xml`'s graph_container (a vertical
             // LinearLayout, weightSum=12, each chart layout_weight=1,

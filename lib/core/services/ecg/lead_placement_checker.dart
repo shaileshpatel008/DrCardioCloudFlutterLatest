@@ -11,6 +11,14 @@ class LeadPlacementWarning {
   final String title;
   final String message;
   final List<String> electrodes;
+
+  Map<String, dynamic> toJson() => {'title': title, 'message': message, 'electrodes': electrodes};
+
+  factory LeadPlacementWarning.fromJson(Map<String, dynamic> json) => LeadPlacementWarning(
+        title: json['title'] as String? ?? '',
+        message: json['message'] as String? ?? '',
+        electrodes: (json['electrodes'] as List?)?.map((e) => e as String).toList() ?? const [],
+      );
 }
 
 /// Flags ECGs that look like two electrodes were swapped on the patient —

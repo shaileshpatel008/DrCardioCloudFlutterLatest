@@ -11,6 +11,7 @@ import '../../../core/services/dat_file_service.dart';
 import '../../../core/services/ecg/ecg_analysis_service.dart';
 import '../../../core/services/ecg/ecg_data.dart';
 import '../../../core/services/ecg/ecg_engine.dart';
+import '../../../core/services/ecg/lead_placement_checker.dart';
 import '../../../core/services/pdf_report_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/widgets/app_confirm_sheet.dart';
@@ -63,6 +64,23 @@ class LiveEcgController extends GetxController {
   ValueNotifier<int> get revision => engine.revision;
   ValueNotifier<List<bool>> get leadStatus => EcgData.instance.leadStatus;
   ValueNotifier<int?> get heartRateBpm => engine.heartRateBpm;
+
+  /// Suspected electrode-swap advisories for the recording in progress —
+  /// see [LeadPlacementChecker]. Re-evaluated every [_placementCheckInterval]
+  /// while actively recording (not continuously — a few beats need to
+  /// accumulate for the amplitude medians to mean anything) and carried
+  /// into the saved [EcgRecordModel] so the PDF report documents the same
+  /// caveat. Loaded Data's existing warnings (if any) pass straight
+  /// through via `copyWith` in [_buildRecordToSave] instead, since there's
+  /// no live stream to re-check there.
+  final RxList<LeadPlacementWarning> leadPlacementWarnings = <LeadPlacementWarning>[].obs;
+  Timer? _placementCheckTimer;
+  static const _placementCheckInterval = Duration(seconds: 2);
+
+  /// How much of [EcgData.chartData]'s tail to analyze each check — about
+  /// 8 seconds at this buffer's ~50Hz downsampled rate, comfortably more
+  /// than [LeadPlacementChecker.minBeats] needs even at a slow heart rate.
+  static const _placementCheckWindowSamples = 400;
 
   /// Total ECG actually captured this screen visit, in seconds —
   /// cumulative across separate Start/Stop attempts (a Stop before 20s
@@ -213,12 +231,20 @@ class LiveEcgController extends GetxController {
     EcgData.instance.isReading = true;
     isReading.value = true;
     elapsedSeconds.value = 0;
+    leadPlacementWarnings.clear();
     engine.resetHeartRate();
     final sent = isTestMode ? await bluetoothService.sendTestStart() : await bluetoothService.sendStart();
     if (!sent) {
       EcgData.instance.isReading = false;
       isReading.value = false;
       AppToast.error('Error communicating to the device. Please go back and connect again.', title: 'Not Connected');
+      return;
+    }
+    // Test Mode's fixed calibration waveform has no real electrodes to
+    // check placement on — same condition the lead-off banner already
+    // uses.
+    if (!isTestMode) {
+      _placementCheckTimer = Timer.periodic(_placementCheckInterval, (_) => _runPlacementCheck());
     }
   }
 
@@ -226,9 +252,25 @@ class LiveEcgController extends GetxController {
     bluetoothService.sendStop();
     EcgData.instance.isReading = false;
     isReading.value = false;
+    _placementCheckTimer?.cancel();
+    _placementCheckTimer = null;
     if (!canSave) {
       AppToast.warning('Need to acquire for at least $minRecordingSeconds seconds.', title: 'Recording too short');
     }
+  }
+
+  /// Runs [LeadPlacementChecker] against the most recent stretch of each
+  /// lead's chart buffer and the live electrode status, replacing
+  /// [leadPlacementWarnings] with whatever it finds (which may be nothing,
+  /// clearing a stale warning once the signal looks normal again).
+  void _runPlacementCheck() {
+    if (!isReading.value) return;
+    final ecg = EcgData.instance;
+    final recent = ecg.chartData.map((lead) {
+      return lead.length > _placementCheckWindowSamples ? lead.sublist(lead.length - _placementCheckWindowSamples) : List<double>.from(lead);
+    }).toList();
+    final warnings = LeadPlacementChecker.check(recent, electrodeStatus: ecg.leadStatus.value);
+    leadPlacementWarnings.assignAll(warnings);
   }
 
   /// Applied immediately: `EcgFilter.filter()`/`highPassFilter()` read the
@@ -366,6 +408,7 @@ class LiveEcgController extends GetxController {
       qt: analysis == null ? '' : analysis.qtIntervalMs.toString(),
       qtc: analysis == null ? '' : analysis.qtcMs.toString(),
       qtByQtc: analysis == null ? '' : _formatMeasurement(analysis.qtOverQtc),
+      leadPlacementWarnings: leadPlacementWarnings.toList(),
     );
   }
 
@@ -409,6 +452,7 @@ class LiveEcgController extends GetxController {
       bluetoothService.sendStop();
       EcgData.instance.isReading = false;
     }
+    _placementCheckTimer?.cancel();
     _secondsSub?.cancel();
     engine.dispose();
     super.onClose();

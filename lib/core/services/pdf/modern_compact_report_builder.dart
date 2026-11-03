@@ -155,6 +155,11 @@ class ModernCompactReportBuilder {
     );
   }
 
+  static List<pw.Widget> _buildWarningBanner(EcgRecordModel record) {
+    final banner = PdfReportShared.placementWarningBanner(record.leadPlacementWarnings, width: _pageWidth - _sidebarWidth - 14);
+    return banner == null ? const [] : [banner, pw.SizedBox(height: 6)];
+  }
+
   static pw.Widget _buildMain(EcgRecordModel record, StorageService storage, String reportType) {
     final simultaneous = reportType.startsWith('Simultaneous');
     final (columns, rowsPerColumn) = PdfReportShared.gridShape(reportType);
@@ -170,6 +175,7 @@ class ModernCompactReportBuilder {
           ],
         ),
         pw.SizedBox(height: 6),
+        ..._buildWarningBanner(record),
         pw.Expanded(child: _buildGrid(record, columns: columns, rowsPerColumn: rowsPerColumn, simultaneous: simultaneous)),
         if (reportType.contains('4x3')) ...[
           pw.SizedBox(height: 4),

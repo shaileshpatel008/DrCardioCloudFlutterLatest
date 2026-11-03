@@ -123,4 +123,25 @@ void main() {
       expect(warnings, hasLength(1));
     });
   });
+
+  group('LeadPlacementWarning JSON round-trip', () {
+    test('toJson/fromJson preserves every field — this is what gets persisted to SQLite', () {
+      const warning = LeadPlacementWarning(
+        title: 'Possible Left/Right Arm Electrode Swap',
+        message: 'Lead I is inverted and aVR is upright.',
+        electrodes: ['RA', 'LA'],
+      );
+      final roundTripped = LeadPlacementWarning.fromJson(warning.toJson());
+      expect(roundTripped.title, warning.title);
+      expect(roundTripped.message, warning.message);
+      expect(roundTripped.electrodes, warning.electrodes);
+    });
+
+    test('fromJson on a malformed/empty map falls back to safe defaults instead of throwing', () {
+      final warning = LeadPlacementWarning.fromJson(const {});
+      expect(warning.title, '');
+      expect(warning.message, '');
+      expect(warning.electrodes, isEmpty);
+    });
+  });
 }

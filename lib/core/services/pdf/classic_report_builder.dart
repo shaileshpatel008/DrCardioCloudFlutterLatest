@@ -41,6 +41,7 @@ class ClassicReportBuilder {
             _buildLetterhead(storage, record),
             pw.SizedBox(height: 8),
             _buildInfoBox(record, signatureImage),
+            ..._buildWarningBanner(record),
             pw.SizedBox(height: 8),
             ..._buildReportBody(record, storage, reportTypes[i]),
             pw.SizedBox(height: 8),
@@ -85,6 +86,11 @@ class ClassicReportBuilder {
         pw.Container(height: 2, color: _blue),
       ],
     );
+  }
+
+  static List<pw.Widget> _buildWarningBanner(EcgRecordModel record) {
+    final banner = PdfReportShared.placementWarningBanner(record.leadPlacementWarnings, width: _contentWidth);
+    return banner == null ? const [] : [pw.SizedBox(height: 8), banner];
   }
 
   static pw.Widget _buildInfoBox(EcgRecordModel record, pw.MemoryImage? signatureImage) {
