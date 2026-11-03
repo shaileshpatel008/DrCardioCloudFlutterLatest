@@ -87,5 +87,40 @@ void main() {
       expect(warnings, hasLength(2));
       expect(warnings.map((w) => w.title), containsAll(['Possible Left/Right Arm Electrode Swap', 'Possible Chest Electrode Swap']));
     });
+
+    // Electrode status convention matches EcgData.leadStatus:
+    // index 0-5 = V1-V6, 6 = Left Leg, 7 = Right Leg, 8 = Left Arm, 9 = Right Arm.
+    const allAttached = [true, true, true, true, true, true, true, true, true, true];
+
+    test('a disconnected limb electrode suppresses the arm-swap warning instead of misreading the noise as a swap', () {
+      final samples = _synthetic(limbAmps: const [-8, 12, 4, 10, 2, 8], precordialR: _normalPrecordial);
+      final raOff = [...allAttached];
+      raOff[9] = false; // Right Arm off
+      expect(LeadPlacementChecker.check(samples, electrodeStatus: raOff), isEmpty);
+    });
+
+    test('a disconnected limb electrode does not suppress an independent chest-swap warning', () {
+      final samples = _synthetic(limbAmps: const [-8, 12, 4, 10, 2, 8], precordialR: const [1, 2, 9, 3, 10, 12]);
+      final raOff = [...allAttached];
+      raOff[9] = false;
+      final warnings = LeadPlacementChecker.check(samples, electrodeStatus: raOff);
+      expect(warnings, hasLength(1));
+      expect(warnings.single.title, contains('Chest Electrode Swap'));
+    });
+
+    test('a disconnected chest electrode suppresses the chest-swap check but not an independent limb warning', () {
+      final samples = _synthetic(limbAmps: const [-8, 12, 4, 10, 2, 8], precordialR: const [1, 2, 9, 3, 10, 12]);
+      final v3Off = [...allAttached];
+      v3Off[2] = false; // V3 off
+      final warnings = LeadPlacementChecker.check(samples, electrodeStatus: v3Off);
+      expect(warnings, hasLength(1));
+      expect(warnings.single.title, contains('Left/Right Arm'));
+    });
+
+    test('an unspecified electrode status (null, the default) runs the check unguarded', () {
+      final samples = _synthetic(limbAmps: const [-8, 12, 4, 10, 2, 8], precordialR: _normalPrecordial);
+      final warnings = LeadPlacementChecker.check(samples);
+      expect(warnings, hasLength(1));
+    });
   });
 }

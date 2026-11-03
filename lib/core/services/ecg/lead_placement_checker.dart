@@ -45,8 +45,24 @@ class LeadPlacementChecker {
   /// say anything useful — stay silent rather than guess.
   static const int minBeats = 4;
 
-  static List<LeadPlacementWarning> check(List<List<double>> leadSamples, {int sampleRateHz = 50}) {
+  /// A disconnected electrode's raw input floats and rails to noise —
+  /// [LeadPlacementChecker] has no way to tell that noise apart from a
+  /// genuinely inverted lead, and I/II/III/aVR/aVL/aVF all share the same
+  /// three limb electrodes, so one loose electrode could otherwise fire
+  /// several false "swap" warnings at once. [electrodeStatus] (same
+  /// convention as `EcgData.leadStatus`: index 0-5 = V1-V6, 6 = Left Leg,
+  /// 7 = Right Leg, 8 = Left Arm, 9 = Right Arm; `true` = attached) lets
+  /// this suppress whichever half of the check currently has no clean
+  /// signal to work from — the existing "Electrode off" warning is the
+  /// right one to show for that, not a misleading swap guess. Pass `null`
+  /// (the default) to skip this guard, e.g. when the caller has already
+  /// confirmed every relevant electrode was attached throughout.
+  static List<LeadPlacementWarning> check(List<List<double>> leadSamples, {int sampleRateHz = 50, List<bool>? electrodeStatus}) {
     if (leadSamples.length < EcgData.noOfChannels) return const [];
+
+    final limbElectrodesOk = electrodeStatus == null || (electrodeStatus.length > 9 && electrodeStatus[6] && electrodeStatus[8] && electrodeStatus[9]);
+    final chestElectrodesOk = electrodeStatus == null || (electrodeStatus.length > 5 && electrodeStatus.sublist(0, 6).every((attached) => attached));
+    if (!limbElectrodesOk && !chestElectrodesOk) return const [];
 
     final beats = _detectBeats(leadSamples[1], sampleRateHz); // lead II is the rhythm reference throughout this app
     if (beats.length < minBeats) return const [];
@@ -55,39 +71,43 @@ class LeadPlacementChecker {
     // at this buffer's coarse ~20ms-per-sample display resolution.
     final halfWindow = max(1, (sampleRateHz * 0.1).round());
 
-    final dominant = List.generate(
-      leadSamples.length,
-      (lead) => _median(beats.map((p) => _dominantDeflection(leadSamples[lead], p, halfWindow)).toList()),
-    );
-
-    final scale = dominant.fold<double>(0, (acc, d) => max(acc, d.abs()));
-    if (scale <= 0) return const [];
-    final deadzone = scale * 0.2;
-
     final warnings = <LeadPlacementWarning>[];
-    final ampI = dominant[0], ampII = dominant[1], ampIII = dominant[2], ampAvr = dominant[3];
 
-    if (ampI < -deadzone && ampAvr > deadzone) {
-      warnings.add(const LeadPlacementWarning(
-        title: 'Possible Left/Right Arm Electrode Swap',
-        message: 'Lead I is inverted and aVR is upright — this pattern usually means the Left Arm and Right Arm electrodes are on the wrong wrists.',
-        electrodes: ['RA', 'LA'],
-      ));
-    } else if (ampII < -deadzone && ampI > deadzone / 2) {
-      warnings.add(const LeadPlacementWarning(
-        title: 'Possible Arm/Leg Electrode Swap',
-        message: 'Lead II looks inverted while Lead I looks normal — consistent with the Right Arm and Left Leg electrodes being swapped.',
-        electrodes: ['RA', 'LL'],
-      ));
-    } else if (ampIII < -deadzone && ampI > deadzone / 2 && ampII > deadzone / 2) {
-      warnings.add(const LeadPlacementWarning(
-        title: 'Possible Arm/Leg Electrode Swap',
-        message: 'Lead III looks inverted while Leads I and II look normal — consistent with the Left Arm and Left Leg electrodes being swapped.',
-        electrodes: ['LA', 'LL'],
-      ));
+    if (limbElectrodesOk) {
+      final dominant = List.generate(
+        4,
+        (lead) => _median(beats.map((p) => _dominantDeflection(leadSamples[lead], p, halfWindow)).toList()),
+      );
+      final scale = dominant.fold<double>(0, (acc, d) => max(acc, d.abs()));
+      if (scale > 0) {
+        final deadzone = scale * 0.2;
+        final ampI = dominant[0], ampII = dominant[1], ampIII = dominant[2], ampAvr = dominant[3];
+
+        if (ampI < -deadzone && ampAvr > deadzone) {
+          warnings.add(const LeadPlacementWarning(
+            title: 'Possible Left/Right Arm Electrode Swap',
+            message: 'Lead I is inverted and aVR is upright — this pattern usually means the Left Arm and Right Arm electrodes are on the wrong wrists.',
+            electrodes: ['RA', 'LA'],
+          ));
+        } else if (ampII < -deadzone && ampI > deadzone / 2) {
+          warnings.add(const LeadPlacementWarning(
+            title: 'Possible Arm/Leg Electrode Swap',
+            message: 'Lead II looks inverted while Lead I looks normal — consistent with the Right Arm and Left Leg electrodes being swapped.',
+            electrodes: ['RA', 'LL'],
+          ));
+        } else if (ampIII < -deadzone && ampI > deadzone / 2 && ampII > deadzone / 2) {
+          warnings.add(const LeadPlacementWarning(
+            title: 'Possible Arm/Leg Electrode Swap',
+            message: 'Lead III looks inverted while Leads I and II look normal — consistent with the Left Arm and Left Leg electrodes being swapped.',
+            electrodes: ['LA', 'LL'],
+          ));
+        }
+      }
     }
 
-    warnings.addAll(_checkPrecordialProgression(leadSamples, beats, halfWindow));
+    if (chestElectrodesOk) {
+      warnings.addAll(_checkPrecordialProgression(leadSamples, beats, halfWindow));
+    }
 
     return warnings;
   }
