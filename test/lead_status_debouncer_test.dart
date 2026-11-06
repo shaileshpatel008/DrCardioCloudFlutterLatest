@@ -76,8 +76,8 @@ void main() {
       }
     });
 
-    test('recovering to attached needs off-exposure to decay back down, not just one good reading', () {
-      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3, offThresholdSeconds: 0.0);
+    test('recovering to attached needs a genuinely unbroken run of good readings, not just a brief good patch', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.3, clearAfterSeconds: 1.0);
       var now = DateTime(2026);
       debouncer.update([true], now);
 
@@ -86,16 +86,48 @@ void main() {
       final offResult = debouncer.update([false], now);
       expect(offResult, [false]);
 
-      // One good reading right after shouldn't instantly clear 400ms of
-      // accumulated exposure.
-      now = now.add(const Duration(milliseconds: 10));
-      final tooSoon = debouncer.update([true], now);
-      expect(tooSoon, isNull, reason: 'exposure needs time to decay, not just a single on reading');
-
-      // Sustained good contact for long enough to fully decay back to 0.
+      // A good patch shorter than clearAfterSeconds shouldn't clear it...
       now = now.add(const Duration(milliseconds: 500));
+      final tooSoon = debouncer.update([true], now);
+      expect(tooSoon, isNull, reason: 'a 500ms good patch is under the 1s unbroken-run requirement');
+
+      // ...and so much as a single off reading resets that run, even this
+      // close to the finish line.
+      now = now.add(const Duration(milliseconds: 900));
+      final interrupted = debouncer.update([false], now);
+      expect(interrupted, isNull, reason: 'still off — a single bad reading at 1.4s in should not have let it clear just before this point');
+
+      now = now.add(const Duration(milliseconds: 1100));
       final recovered = debouncer.update([true], now);
-      expect(recovered, [true]);
+      expect(recovered, [true], reason: '1.1s of unbroken good contact since the last off reading clears it');
+    });
+
+    test('a connection that is mostly bad but has multi-second good-looking patches never fully clears '
+        '(the real-world bug this fix targets: the previous design cleared during exactly such a patch, '
+        'then re-committed off moments later — the banner visibly flickering every few seconds)', () {
+      final debouncer = LeadStatusDebouncer(onThresholdSeconds: 0.2, clearAfterSeconds: 2.0);
+      var now = DateTime(2026);
+      debouncer.update([true], now);
+
+      // Drive it off.
+      now = now.add(const Duration(milliseconds: 300));
+      final offResult = debouncer.update([false], now);
+      expect(offResult, [false]);
+
+      // A good-looking patch that's real but shorter than clearAfterSeconds
+      // (1.8s, under the 2s requirement) — exactly the kind of patch that
+      // cleared the old decay-to-zero design.
+      List<bool>? sawRecovery;
+      for (var ms = 0; ms < 1800; ms += 100) {
+        now = now.add(const Duration(milliseconds: 100));
+        sawRecovery = debouncer.update([true], now) ?? sawRecovery;
+      }
+      expect(sawRecovery, isNull, reason: 'an 1.8s good patch is still under the 2s unbroken-run requirement — must not clear yet');
+
+      // The patch ends and it goes bad again before ever reaching 2s.
+      now = now.add(const Duration(milliseconds: 100));
+      final stillOff = debouncer.update([false], now);
+      expect(stillOff, isNull, reason: 'it never cleared, so this is not a change');
     });
 
     test('tracks each electrode independently', () {
