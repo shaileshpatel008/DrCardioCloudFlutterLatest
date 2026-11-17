@@ -269,7 +269,15 @@ class LiveEcgController extends GetxController {
     final recent = ecg.chartData.map((lead) {
       return lead.length > _placementCheckWindowSamples ? lead.sublist(lead.length - _placementCheckWindowSamples) : List<double>.from(lead);
     }).toList();
-    final warnings = LeadPlacementChecker.check(recent, electrodeStatus: ecg.leadStatus.value);
+    // chartData is in raw-ADC units scaled by the current display gain
+    // (see EcgEngine._prepareEntryPerChannel's `graphScale * hpfVal`), so
+    // the floor needs the same scaling to land in real millivolts — 0.15mV
+    // is comfortably under a real QRS deflection but above the kind of
+    // baseline noise a weak/loose contact produces, which is what let a
+    // near-flat test signal falsely trigger a "chest swap" warning before
+    // this floor existed.
+    final minSignalAmplitude = 0.15 * ecg.valPerMv * ecg.graphScale;
+    final warnings = LeadPlacementChecker.check(recent, electrodeStatus: ecg.leadStatus.value, minSignalAmplitude: minSignalAmplitude);
     leadPlacementWarnings.assignAll(warnings);
   }
 

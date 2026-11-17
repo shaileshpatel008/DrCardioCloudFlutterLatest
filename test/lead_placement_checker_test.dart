@@ -122,6 +122,29 @@ void main() {
       final warnings = LeadPlacementChecker.check(samples);
       expect(warnings, hasLength(1));
     });
+
+    test('a scaled-down (weak-signal) version of a real swap pattern is suppressed by minSignalAmplitude '
+        '(regression for a real false positive: a near-noise-floor test recording with correctly attached '
+        'electrodes still triggered a chest-swap warning before this guard existed)', () {
+      // Same shape as the "swapped adjacent chest pair" case above, just
+      // scaled down to 5% amplitude — small enough that a real electrode
+      // contact issue would produce comparable noise, so this should no
+      // longer be trusted without a minimum floor.
+      final weakSamples = _synthetic(limbAmps: _normalLimb.map((v) => v * 0.05).toList(), precordialR: const [1, 2, 9, 3, 10, 12].map((v) => v * 0.05).toList());
+
+      final unguarded = LeadPlacementChecker.check(weakSamples);
+      expect(unguarded, isNotEmpty, reason: 'sanity check: without a floor, the weak-but-same-shape signal still falsely triggers');
+
+      final guarded = LeadPlacementChecker.check(weakSamples, minSignalAmplitude: 1.0);
+      expect(guarded, isEmpty, reason: 'with a realistic floor, the same weak signal should no longer trigger any warning');
+    });
+
+    test('a strong, genuine swap pattern still triggers even with minSignalAmplitude set', () {
+      final samples = _synthetic(limbAmps: const [-8, 12, 4, 10, 2, 8], precordialR: _normalPrecordial);
+      final warnings = LeadPlacementChecker.check(samples, minSignalAmplitude: 1.0);
+      expect(warnings, hasLength(1));
+      expect(warnings.single.title, contains('Left/Right Arm'));
+    });
   });
 
   group('LeadPlacementWarning JSON round-trip', () {

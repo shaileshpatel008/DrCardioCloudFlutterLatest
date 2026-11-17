@@ -41,6 +41,15 @@ class LeadPlacementWarning {
 ///    dips below both neighbours is the classic sign two adjacent chest
 ///    stickers were swapped.
 ///
+/// A weak or noisy signal (a loose-but-still-technically-attached
+/// electrode, a very low-amplitude test signal) can trigger a false
+/// positive here: the comparisons below are all *relative* ("is aVR
+/// bigger than 20% of the biggest limb deflection"), and a signal that's
+/// mostly baseline noise still has some "biggest" value, so 20% of noise
+/// can still look like a real swap pattern by chance. [check]'s
+/// `minSignalAmplitude` parameter is the guard against that — see its
+/// doc comment.
+///
 /// None of these are certainties — a real lateral MI, dextrocardia, or
 /// just an unusual but healthy heart can produce a similar-looking pattern
 /// — so this is reported as an advisory for a human to double check, the
@@ -65,7 +74,22 @@ class LeadPlacementChecker {
   /// right one to show for that, not a misleading swap guess. Pass `null`
   /// (the default) to skip this guard, e.g. when the caller has already
   /// confirmed every relevant electrode was attached throughout.
-  static List<LeadPlacementWarning> check(List<List<double>> leadSamples, {int sampleRateHz = 50, List<bool>? electrodeStatus}) {
+  /// Below this much measured deflection, the relative comparisons below
+  /// ("is aVR bigger than 20% of the biggest limb deflection") can't tell
+  /// a real QRS apart from baseline noise on a weak/loose contact — a
+  /// signal that's almost entirely noise still has *some* "biggest"
+  /// deflection, and 20% of noise is still noise, so the relative
+  /// thresholds alone can't catch this case. [minSignalAmplitude] is an
+  /// absolute floor (same units as [leadSamples], i.e. already scaled by
+  /// calibration/gain) below which both checks stay silent rather than
+  /// guess. Defaults to 0 (no floor) so existing callers/tests that don't
+  /// pass it are unaffected.
+  static List<LeadPlacementWarning> check(
+    List<List<double>> leadSamples, {
+    int sampleRateHz = 50,
+    List<bool>? electrodeStatus,
+    double minSignalAmplitude = 0,
+  }) {
     if (leadSamples.length < EcgData.noOfChannels) return const [];
 
     final limbElectrodesOk = electrodeStatus == null || (electrodeStatus.length > 9 && electrodeStatus[6] && electrodeStatus[8] && electrodeStatus[9]);
@@ -87,7 +111,7 @@ class LeadPlacementChecker {
         (lead) => _median(beats.map((p) => _dominantDeflection(leadSamples[lead], p, halfWindow)).toList()),
       );
       final scale = dominant.fold<double>(0, (acc, d) => max(acc, d.abs()));
-      if (scale > 0) {
+      if (scale >= minSignalAmplitude && scale > 0) {
         final deadzone = scale * 0.2;
         final ampI = dominant[0], ampII = dominant[1], ampIII = dominant[2], ampAvr = dominant[3];
 
@@ -114,16 +138,21 @@ class LeadPlacementChecker {
     }
 
     if (chestElectrodesOk) {
-      warnings.addAll(_checkPrecordialProgression(leadSamples, beats, halfWindow));
+      warnings.addAll(_checkPrecordialProgression(leadSamples, beats, halfWindow, minSignalAmplitude));
     }
 
     return warnings;
   }
 
-  static List<LeadPlacementWarning> _checkPrecordialProgression(List<List<double>> leadSamples, List<int> beats, int halfWindow) {
+  static List<LeadPlacementWarning> _checkPrecordialProgression(
+    List<List<double>> leadSamples,
+    List<int> beats,
+    int halfWindow,
+    double minSignalAmplitude,
+  ) {
     final rWave = List.generate(6, (i) => _median(beats.map((p) => _maxDeflection(leadSamples[6 + i], p, halfWindow)).toList()));
     final rScale = rWave.fold<double>(0, max);
-    if (rScale <= 0) return const [];
+    if (rScale < minSignalAmplitude || rScale <= 0) return const [];
 
     final inversions = <int>[];
     for (var i = 0; i < 5; i++) {
