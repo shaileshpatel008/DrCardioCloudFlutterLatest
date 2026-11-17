@@ -145,7 +145,16 @@ class PdfReportShared {
         final window = samples.length > 300 ? samples.sublist(samples.length - 300) : samples;
         final xScale = size.x / window.length;
         final scaleY = (size.y / 2) / (1.5 * EcgData.instance.valPerMv);
-        double y(double v) => (midY - v * scaleY).clamp(0.0, size.y);
+        // "+" here, not "-": the pdf package's CustomPaint canvas has Y
+        // increasing upward (standard PDF convention, origin at the
+        // bottom), the opposite of Flutter's on-screen Canvas (Y
+        // increasing downward, origin at the top) that the live chart's
+        // painter uses the same "midline +/- value * scale" shape
+        // against. Using "-" here — copied from that live-chart formula
+        // without adjusting for the flipped axis — drew every lead's
+        // trace as the vertical mirror image of what the live screen
+        // showed, confirmed with a known-sign test spike before this fix.
+        double y(double v) => (midY + v * scaleY).clamp(0.0, size.y);
         context.setStrokeColor(traceColor);
         context.setLineWidth(strokeWidth);
         context.moveTo(0, y(window[0]));
