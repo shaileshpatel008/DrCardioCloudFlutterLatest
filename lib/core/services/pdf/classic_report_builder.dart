@@ -239,7 +239,7 @@ class ClassicReportBuilder {
                           ),
                         ),
                       ),
-                      if (row == 0) pw.Positioned(top: 3, left: 2, child: _calibrationMark(cellHeight - 10)),
+                      if (row == 0) pw.Positioned(top: 3, left: 2, child: _calibrationMark(PdfReportShared.calibrationHeight(record.gain, maxHeight: cellHeight - 4))),
                       pw.Positioned(
                         top: 3,
                         left: row == 0 ? 17 : 4,
@@ -288,7 +288,7 @@ class ClassicReportBuilder {
       child: pw.Stack(children: [
         pw.Positioned.fill(child: PdfReportShared.ecgPaperBackground(width: _contentWidth, height: height)),
         pw.Positioned.fill(child: pw.Container(decoration: pw.BoxDecoration(border: pw.Border.all(color: _blue, width: 0.8)))),
-        pw.Positioned(top: 4, left: 4, child: _calibrationMark(height - 14)),
+        pw.Positioned(top: 4, left: 4, child: _calibrationMark(PdfReportShared.calibrationHeight(record.gain, maxHeight: height - 4))),
         pw.Positioned(top: 4, left: 19, child: pw.Text(longLead, style: pw.TextStyle(fontSize: 8.5, fontStyle: pw.FontStyle.italic, fontWeight: pw.FontWeight.bold, color: _blue))),
         pw.Center(child: PdfReportShared.tracePainter(samples, width: _contentWidth, height: height - 4, color: PdfReportShared.inkColor, strokeWidth: 0.7)),
       ]),

@@ -166,6 +166,36 @@ class PdfReportShared {
     );
   }
 
+  /// Points-per-millimeter for a PDF page (1pt = 1/72in, 1in = 25.4mm) —
+  /// same rounded constant (`PS_PT_per_mm`) the old app's `PdfGenerator`
+  /// uses, kept for visual parity with it rather than the few-thousandths
+  /// more precise `72 / 25.4`.
+  static const _pointsPerMm = 2.835;
+
+  /// Standard ECG calibration: a 1mV pulse is drawn 10mm tall at Gain 1 —
+  /// fixed, not configurable, same as the old app's `Y_Scale_mm_per_mv`.
+  static const _calibrationMmPerMv = 10.0;
+
+  /// The correct height for a calibration mark representing exactly 1mV
+  /// at [gain] — port of the old app's `plotCalibration()`, which sizes
+  /// its box with `PS_PT_per_mm * Y_Scale_mm_per_mv * scale` (the
+  /// `val_per_mv` calibration constant cancels out of that formula
+  /// algebraically, so the box's height never depended on it there
+  /// either). The previous version of this report sized the mark as an
+  /// arbitrary fraction of whatever cell it sat in — never tied to the
+  /// actual "10mm/mV" standard or to the recording's own gain — which is
+  /// why it came out too short at Gain 1 and wouldn't have scaled
+  /// correctly at any other gain either. [maxHeight] clamps the result to
+  /// whatever room the cell actually has, since an unclamped mark at a
+  /// high gain (e.g. 12x) would ask for several times the cell's height
+  /// and overflow it — the old app's Canvas drawing tolerated that
+  /// silently, but this package's fixed-size widgets do not.
+  static double calibrationHeight(String gain, {required double maxHeight}) {
+    final gainScale = double.tryParse(gain) ?? 1;
+    final height = _pointsPerMm * _calibrationMmPerMv * gainScale;
+    return height.clamp(0.0, maxHeight);
+  }
+
   /// Classic ECG graph paper: fine lines every 1mm-equivalent box, a
   /// heavier line every 5 boxes — the pink/blue pattern the old app's
   /// reports (and real ECG paper) use, drawn once behind a whole grid

@@ -50,6 +50,25 @@ void main() {
       // A single column (or empty samples) returns the whole list untouched.
       expect(PdfReportShared.sequentialSlice(samples, 1, 0), samples);
     });
+
+    test('calibrationHeight is exactly 10mm (in points) at Gain 1, matching the "10mm/mV" standard', () {
+      // 2.835 points/mm * 10mm = 28.35pt — same formula (and the same
+      // rounded points-per-mm constant) as the old app's plotCalibration().
+      expect(PdfReportShared.calibrationHeight('1', maxHeight: 1000), closeTo(28.35, 0.01));
+    });
+
+    test('calibrationHeight scales linearly with gain', () {
+      expect(PdfReportShared.calibrationHeight('2', maxHeight: 1000), closeTo(56.7, 0.01));
+      expect(PdfReportShared.calibrationHeight('0.5', maxHeight: 1000), closeTo(14.175, 0.01));
+    });
+
+    test('calibrationHeight never exceeds the room the cell actually has', () {
+      expect(PdfReportShared.calibrationHeight('2', maxHeight: 40), 40);
+    });
+
+    test('calibrationHeight falls back to Gain 1 for an unparsable gain string', () {
+      expect(PdfReportShared.calibrationHeight('not-a-number', maxHeight: 1000), closeTo(28.35, 0.01));
+    });
   });
 }
 
