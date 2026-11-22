@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/page_scaffold.dart';
 import '../../../core/widgets/select_field.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../shell/app_shell.dart';
@@ -284,7 +286,7 @@ class ClientFormView extends GetView<ClientFormController> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    SecondaryButton(label: 'Cancel', onPressed: () => Get.back()),
+                    SecondaryButton(label: 'Cancel', onPressed: () => closeRoute(null, AppRoutes.clients)),
                     const SizedBox(width: 10),
                     Obx(
                       () => PrimaryButton(

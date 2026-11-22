@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
@@ -42,7 +43,7 @@ class EcgDetailController extends GetxController {
   Future<void> delete() async {
     final r = record.value;
     if (r == null) return;
-    if (await EcgRecordActions.delete(r)) Get.back(result: true);
+    if (await EcgRecordActions.delete(r)) closeRoute(true, AppRoutes.ecgRecords);
   }
 
   Future<void> reassign() async {

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../core/utils/responsive.dart';
 import '../../../core/utils/link_opener.dart';
+import '../../../core/utils/navigation.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/form_fields.dart';
 import '../../../core/widgets/page_scaffold.dart';
 import '../../../core/widgets/pdf_preview/pdf_preview.dart';
 import '../../../core/widgets/ui_kit.dart';
+import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../shell/app_shell.dart';
@@ -22,7 +24,7 @@ class DiagnoseView extends GetView<DiagnoseController> {
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (await controller.confirmLeave()) Get.back();
+        if (await controller.confirmLeave()) closeRoute(null, AppRoutes.ecgRecords);
       },
       child: AppShell(
         active: 'ecg_records',

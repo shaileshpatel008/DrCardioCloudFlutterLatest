@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/link_opener.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_dialogs.dart';
@@ -282,7 +283,7 @@ class _LoginForm extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 10),
-                  TextButton(onPressed: () => Get.back(), child: const Text('← Back to sign in')),
+                  TextButton(onPressed: () => closeRoute(), child: const Text('← Back to sign in')),
                 ])),
           ),
         ),

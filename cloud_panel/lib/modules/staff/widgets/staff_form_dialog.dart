@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -82,7 +82,7 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
     try {
       final msg = _editing ? await _repo.update(widget.staff!.id, body) : await _repo.create(body);
       AppToast.success(msg);
-      Get.back(result: true);
+      closeRoute(true);
     } on ApiException catch (e) {
       setState(() => _errors = e.fieldErrors);
       if (e.fieldErrors.isEmpty) AppToast.error(e.message);
@@ -163,7 +163,7 @@ class _StaffFormDialogState extends State<StaffFormDialog> {
           ]),
         ),
         footer: Row(children: [
-          Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => Get.back(result: false))),
+          Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => closeRoute(false))),
           const SizedBox(width: 10),
           Expanded(child: PrimaryButton(label: _editing ? 'Save changes' : 'Add staff', loading: _saving, onPressed: _save)),
         ]),

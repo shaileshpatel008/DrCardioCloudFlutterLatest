@@ -11,6 +11,10 @@ import 'widgets/top_bar.dart';
 ///  - desktop: full dark sidebar (collapsible) + top bar
 ///  - tablet:  icon rail + top bar
 ///  - phone:   top bar with a menu button that opens the sidebar as a drawer
+///
+/// Sidebar, top bar and page are separate focus groups, so Tab moves through
+/// a form's fields in order instead of jumping to sidebar links that happen
+/// to sit at the same height on screen.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.active, required this.title, required this.child, this.floatingActionButton});
 
@@ -35,7 +39,7 @@ class AppShell extends StatelessWidget {
         ),
         appBar: PreferredSize(preferredSize: const Size.fromHeight(64), child: TopBar(title: title, phone: true)),
         floatingActionButton: floatingActionButton,
-        body: SafeArea(top: false, child: child),
+        body: SafeArea(top: false, child: FocusTraversalGroup(child: child)),
       );
     }
 
@@ -50,13 +54,13 @@ class AppShell extends StatelessWidget {
             curve: Curves.easeOutCubic,
             width: collapsed ? 80 : 264,
             color: AppColors.sidebar,
-            child: Sidebar(active: active, collapsed: collapsed, canToggle: !tablet),
+            child: FocusTraversalGroup(child: Sidebar(active: active, collapsed: collapsed, canToggle: !tablet)),
           );
         }),
         Expanded(
           child: Column(children: [
-            TopBar(title: title, phone: false),
-            Expanded(child: child),
+            FocusTraversalGroup(child: TopBar(title: title, phone: false)),
+            Expanded(child: FocusTraversalGroup(child: child)),
           ]),
         ),
       ]),

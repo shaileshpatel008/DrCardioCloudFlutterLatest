@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../data/models/network_models.dart';
@@ -69,9 +69,9 @@ class CardiologistViewPanel extends StatelessWidget {
           title: 'Cardiologist',
           body: body,
           footer: Row(children: [
-            Expanded(child: SecondaryButton(label: 'Delete', icon: Icons.delete_outline_rounded, danger: true, onPressed: () => Get.back(result: 'delete'))),
+            Expanded(child: SecondaryButton(label: 'Delete', icon: Icons.delete_outline_rounded, danger: true, onPressed: () => closeRoute('delete'))),
             const SizedBox(width: 10),
-            Expanded(child: PrimaryButton(label: 'Edit', icon: Icons.edit_outlined, onPressed: () => Get.back(result: 'edit'))),
+            Expanded(child: PrimaryButton(label: 'Edit', icon: Icons.edit_outlined, onPressed: () => closeRoute('edit'))),
           ]),
         );
       },

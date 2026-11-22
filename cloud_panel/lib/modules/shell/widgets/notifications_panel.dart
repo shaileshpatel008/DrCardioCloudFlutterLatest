@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 
 import '../../../core/services/auth_service.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
@@ -37,7 +38,7 @@ class NotificationsPanel extends StatelessWidget {
                 ])),
           ),
           Obx(() => TextButton(onPressed: shell.unread.value == 0 ? null : shell.markAllRead, child: const Text('Read all'))),
-          if (asPanel) IconButton(tooltip: 'Close', onPressed: () => Get.back(), icon: const Icon(Icons.close_rounded)),
+          if (asPanel) IconButton(tooltip: 'Close', onPressed: () => closeRoute(), icon: const Icon(Icons.close_rounded)),
         ]),
       ),
       const Divider(),
@@ -64,7 +65,7 @@ class NotificationsPanel extends StatelessWidget {
                   onTap: () {
                     shell.markRead(n);
                     if (isCardiologist) {
-                      if (asPanel) Get.back();
+                      if (asPanel) closeRoute();
                       Get.offAllNamed(AppRoutes.ecgRecords, parameters: {'status': 'requested'});
                     }
                   },

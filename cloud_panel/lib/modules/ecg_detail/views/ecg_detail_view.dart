@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/html_text.dart';
 import '../../../core/utils/link_opener.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/page_scaffold.dart';
 import '../../../core/widgets/pdf_preview/pdf_preview.dart';
@@ -49,7 +50,7 @@ class EcgDetailView extends GetView<EcgDetailController> {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () => Get.previousRoute.isEmpty ? Get.offAllNamed(AppRoutes.ecgRecords) : Get.back(),
+                onPressed: () => Get.previousRoute.isEmpty ? Get.offAllNamed(AppRoutes.ecgRecords) : closeRoute(),
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
                 label: const Text('All ECG records'),
               ),

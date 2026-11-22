@@ -3,11 +3,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/data_table.dart';
 import '../../../core/widgets/page_scaffold.dart';
 import '../../../core/widgets/ui_kit.dart';
 import '../../../data/models/network_models.dart';
+import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../shell/app_shell.dart';
@@ -28,7 +30,7 @@ class ClientDetailView extends GetView<ClientDetailController> {
         return PageBody(onRefresh: controller.load, children: [
           Align(
             alignment: Alignment.centerLeft,
-            child: TextButton.icon(onPressed: () => Get.back(), icon: const Icon(Icons.arrow_back_rounded, size: 18), label: const Text('Clients')),
+            child: TextButton.icon(onPressed: () => closeRoute(null, AppRoutes.clients), icon: const Icon(Icons.arrow_back_rounded, size: 18), label: const Text('Clients')),
           ),
           _Profile(controller: controller, client: c),
           _Tabs(controller: controller, client: c),

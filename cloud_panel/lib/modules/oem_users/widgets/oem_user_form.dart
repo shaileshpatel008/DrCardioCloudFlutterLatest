@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -74,7 +74,7 @@ class _OemUserFormState extends State<OemUserForm> {
     try {
       final msg = _editing ? await _repo.update(widget.existing!.id, body) : await _repo.create(body);
       AppToast.success(msg);
-      Get.back(result: true);
+      closeRoute(true);
     } on ApiException catch (e) {
       setState(() => _errors = e.fieldErrors);
       if (e.fieldErrors.isEmpty) AppToast.error(e.message);
@@ -122,7 +122,7 @@ class _OemUserFormState extends State<OemUserForm> {
           InfoTile(label: 'Last updated', value: Fmt.dateTime(u.updatedAt)),
         ]),
         footer: Row(children: [
-          Expanded(child: SecondaryButton(label: 'Close', onPressed: () => Get.back(result: false))),
+          Expanded(child: SecondaryButton(label: 'Close', onPressed: () => closeRoute(false))),
           const SizedBox(width: 10),
           Expanded(child: PrimaryButton(label: 'Edit', icon: Icons.edit_outlined, onPressed: () => setState(() => _viewing = false))),
         ]),
@@ -165,7 +165,7 @@ class _OemUserFormState extends State<OemUserForm> {
         ]),
       ),
       footer: Row(children: [
-        Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => Get.back(result: false))),
+        Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => closeRoute(false))),
         const SizedBox(width: 10),
         Expanded(child: PrimaryButton(label: _editing ? 'Update' : 'Save', loading: _saving, onPressed: _save)),
       ]),

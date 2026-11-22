@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/form_fields.dart';
@@ -61,7 +61,7 @@ class _DeviceFormState extends State<DeviceForm> {
           ? await _repo.update(widget.existing!.id, _hospital!.id, _instrument.text)
           : await _repo.create(_hospital!.id, _instrument.text);
       AppToast.success(msg);
-      Get.back(result: true);
+      closeRoute(true);
     } on ApiException catch (e) {
       setState(() {
         _errors = e.fieldErrors;
@@ -110,7 +110,7 @@ class _DeviceFormState extends State<DeviceForm> {
         ]),
       ),
       footer: Row(children: [
-        Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => Get.back(result: false))),
+        Expanded(child: SecondaryButton(label: 'Cancel', onPressed: _saving ? null : () => closeRoute(false))),
         const SizedBox(width: 10),
         Expanded(child: PrimaryButton(label: _editing ? 'Save changes' : 'Save device', loading: _saving, onPressed: _save)),
       ]),

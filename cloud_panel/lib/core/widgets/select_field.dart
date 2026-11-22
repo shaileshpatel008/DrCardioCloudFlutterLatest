@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../data/models/paged.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../utils/navigation.dart';
 import 'app_dialogs.dart';
 
 /// Opens a searchable list (dialog on wide screens, sheet on phones) and
@@ -107,7 +107,7 @@ class _SelectBodyState<T> extends State<_SelectBody<T>> {
                 if (widget.subtitle != null) Text(widget.subtitle!, style: AppTextStyles.caption),
               ]),
             ),
-            IconButton(tooltip: 'Close', onPressed: () => Get.back(), icon: const Icon(Icons.close_rounded)),
+            IconButton(tooltip: 'Close', onPressed: () => closeRoute(), icon: const Icon(Icons.close_rounded)),
           ]),
         ),
         Padding(
@@ -134,11 +134,11 @@ class _SelectBodyState<T> extends State<_SelectBody<T>> {
                       padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
                       children: [
                         if (widget.allowClear && _q.isEmpty)
-                          _row(widget.clearLabel, widget.selected == null, () => Get.back(result: SelectResult<T>.cleared())),
+                          _row(widget.clearLabel, widget.selected == null, () => closeRoute(SelectResult<T>.cleared())),
                         ...items.map((i) => _row(
                               widget.labelOf(i),
                               widget.selected != null && widget.selected == i,
-                              () => Get.back(result: SelectResult<T>.value(i)),
+                              () => closeRoute(SelectResult<T>.value(i)),
                             )),
                         if (items.isEmpty)
                           Padding(

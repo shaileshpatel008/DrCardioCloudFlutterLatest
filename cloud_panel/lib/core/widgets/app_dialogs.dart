@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../utils/navigation.dart';
 import 'ui_kit.dart';
 
 class AppDialogs {
@@ -39,9 +40,9 @@ class AppDialogs {
               Text(message, style: AppTextStyles.body(color: AppColors.muted, height: 1.55)),
               const SizedBox(height: 22),
               Row(children: [
-                Expanded(child: SecondaryButton(label: 'Cancel', onPressed: () => Get.back(result: false))),
+                Expanded(child: SecondaryButton(label: 'Cancel', onPressed: () => closeRoute(false))),
                 const SizedBox(width: 10),
-                Expanded(child: PrimaryButton(label: confirmLabel, danger: danger, onPressed: () => Get.back(result: true))),
+                Expanded(child: PrimaryButton(label: confirmLabel, danger: danger, onPressed: () => closeRoute(true))),
               ]),
             ]),
           ),
@@ -143,7 +144,7 @@ class PanelScaffold extends StatelessWidget {
               ],
             ]),
           ),
-          IconAction(icon: Icons.close_rounded, tooltip: 'Close', onPressed: () => Get.back()),
+          IconAction(icon: Icons.close_rounded, tooltip: 'Close', onPressed: () => closeRoute()),
         ]),
       ),
       const Divider(),

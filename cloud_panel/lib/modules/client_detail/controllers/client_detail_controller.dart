@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../core/base/paged_list_controller.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/network_models.dart';
@@ -61,7 +62,7 @@ class ClientDetailController extends GetxController {
     if (!ok) return;
     try {
       AppToast.success(await _repo.delete(id));
-      Get.back(result: true);
+      closeRoute(true, AppRoutes.clients);
     } on ApiException catch (e) {
       AppToast.error(e.message);
     }

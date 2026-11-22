@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/html_text.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../data/models/ecg_record_model.dart';
 import '../../../data/repositories/ecg_repository.dart';
+import '../../../routes/app_routes.dart';
 
 /// Cardiologist report editor (web: /ecg/{id}/diagnose).
 ///  - Save draft -> status stays "requested"
@@ -132,7 +134,7 @@ class DiagnoseController extends GetxController {
       });
       _dirty = false;
       AppToast.success(res.message);
-      Get.back(result: true);
+      closeRoute(true, AppRoutes.ecgRecords);
     } on ApiException catch (e) {
       ecgStatusError.value = e.errorFor('ecg_status');
       AppToast.error(e.message);

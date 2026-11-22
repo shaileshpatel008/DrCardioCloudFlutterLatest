@@ -2,10 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/navigation.dart';
 import '../../../core/widgets/app_toast.dart';
 import '../../../core/widgets/select_field.dart';
 import '../../../data/models/paged.dart';
 import '../../../data/repositories/network_repository.dart';
+import '../../../routes/app_routes.dart';
 
 /// Add / edit client — every field of the web form (client/add, client/{id}/edit).
 class ClientFormController extends GetxController {
@@ -119,7 +121,7 @@ class ClientFormController extends GetxController {
     try {
       final msg = editing ? await _repo.update(editId!, body) : await _repo.create(body);
       AppToast.success(msg);
-      Get.back(result: true);
+      closeRoute(true, AppRoutes.clients);
     } on ApiException catch (e) {
       errors.assignAll(e.fieldErrors);
       AppToast.error(e.fieldErrors.isEmpty ? e.message : 'Please fix the highlighted fields.');
