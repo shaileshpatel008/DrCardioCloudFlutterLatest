@@ -1,4 +1,4 @@
-package `in`.drcardio.drcardio_cloud_panel
+package com.drcardio.cloudpanel
 
 import io.flutter.embedding.android.FlutterActivity
 
