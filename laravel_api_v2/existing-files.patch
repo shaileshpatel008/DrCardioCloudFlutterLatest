@@ -1,0 +1,50 @@
+--- a/app/Models/User.php
++++ b/app/Models/User.php
+@@ -7,11 +7,12 @@
+ use Illuminate\Foundation\Auth\User as Authenticatable;
+ use Illuminate\Notifications\Notifiable;
+ use Illuminate\Database\Eloquent\SoftDeletes;
++use Laravel\Sanctum\HasApiTokens;
+ 
+ class User extends Authenticatable
+ {
+      
+-    use  Notifiable,SoftDeletes;
++    use  HasApiTokens, Notifiable, SoftDeletes;
+ 
+     /**
+      * The attributes that are mass assignable.
+--- a/bootstrap/app.php
++++ b/bootstrap/app.php
+@@ -6,6 +6,8 @@
+ use App\Http\Middleware\CheckRoles;
+ use App\Http\Middleware\AccessAdmin;
+ use App\Http\Middleware\APIToken;
++use App\Http\Middleware\ApiRole;
++use App\Http\Middleware\ForceJsonResponse;
+ 
+ return Application::configure(basePath: dirname(__DIR__))
+     ->withRouting(
+@@ -18,7 +20,9 @@
+         $middleware->alias([
+             'checkRoles' => CheckRoles::class,
+             'auth.admin' => AccessAdmin::class,     
+-            'apitoken'=> APIToken::class
++            'apitoken'=> APIToken::class,
++            'apiRole' => ApiRole::class,
++            'forceJson' => ForceJsonResponse::class,
+         ]);
+     })
+     ->withExceptions(function (Exceptions $exceptions) {
+--- a/routes/api.php
++++ b/routes/api.php
+@@ -46,4 +46,7 @@
+         Route::delete('/delete-cardio-logo', [CardiologistController::class, 'deleteCardiologistLogo']);
+         Route::delete('/delete-cardio-signature', [CardiologistController::class, 'deleteCardiologistSignature']);
+     });          
+-});
+\ No newline at end of file
++});
++
++// Panel API v2 (Flutter web / Android / iOS panel app)
++require __DIR__.'/api_v2.php';
