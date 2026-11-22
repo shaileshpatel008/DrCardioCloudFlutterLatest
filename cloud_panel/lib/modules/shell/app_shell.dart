@@ -37,7 +37,10 @@ class AppShell extends StatelessWidget {
           backgroundColor: AppColors.sidebar,
           child: SafeArea(child: Sidebar(active: active, collapsed: false, inDrawer: true)),
         ),
-        appBar: PreferredSize(preferredSize: const Size.fromHeight(64), child: TopBar(title: title, phone: true)),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: TopBar(title: title, phone: true),
+        ),
         floatingActionButton: floatingActionButton,
         body: SafeArea(top: false, child: FocusTraversalGroup(child: child)),
       );
@@ -46,24 +49,34 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.ground,
       floatingActionButton: floatingActionButton,
-      body: Row(children: [
-        Obx(() {
-          final collapsed = tablet || shell.sidebarCollapsed.value;
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            width: collapsed ? 80 : 264,
-            color: AppColors.sidebar,
-            child: FocusTraversalGroup(child: Sidebar(active: active, collapsed: collapsed, canToggle: !tablet)),
-          );
-        }),
-        Expanded(
-          child: Column(children: [
-            FocusTraversalGroup(child: TopBar(title: title, phone: false)),
-            Expanded(child: FocusTraversalGroup(child: child)),
-          ]),
+      // SafeArea keeps the sidebar and top bar clear of the status bar on
+      // Android / iOS tablets (it adds nothing on the web).
+      body: SafeArea(
+        child: Row(
+          children: [
+            Obx(() {
+              final collapsed = tablet || shell.sidebarCollapsed.value;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                width: collapsed ? 80 : 264,
+                color: AppColors.sidebar,
+                child: FocusTraversalGroup(
+                  child: Sidebar(active: active, collapsed: collapsed, canToggle: !tablet),
+                ),
+              );
+            }),
+            Expanded(
+              child: Column(
+                children: [
+                  FocusTraversalGroup(child: TopBar(title: title, phone: false)),
+                  Expanded(child: FocusTraversalGroup(child: child)),
+                ],
+              ),
+            ),
+          ],
         ),
-      ]),
+      ),
     );
   }
 }

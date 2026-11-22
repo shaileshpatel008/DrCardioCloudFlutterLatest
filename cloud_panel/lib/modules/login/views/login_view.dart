@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 
@@ -27,14 +28,26 @@ class LoginView extends GetView<LoginController> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: wide
-          ? Row(children: [
-              const Expanded(flex: 11, child: _BrandPanel()),
-              Expanded(flex: 9, child: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(32), child: form))),
-            ])
-          : SingleChildScrollView(
+          ? SafeArea(
+              child: Row(children: [
+                const Expanded(flex: 11, child: _BrandPanel()),
+                Expanded(flex: 9, child: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(32), child: form))),
+              ]),
+            )
+          // Phones: a fixed dark strip sits behind the status bar so the
+          // page never scrolls underneath the clock / battery icons.
+          : AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
               child: Column(children: [
-                const _BrandPanel(compact: true),
-                Padding(padding: const EdgeInsets.fromLTRB(20, 28, 20, 40), child: form),
+                Container(height: MediaQuery.paddingOf(context).top, color: AppColors.sidebar),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(children: [
+                      const _BrandPanel(compact: true),
+                      Padding(padding: const EdgeInsets.fromLTRB(20, 28, 20, 40), child: form),
+                    ]),
+                  ),
+                ),
               ]),
             ),
     );
@@ -54,7 +67,7 @@ class _BrandPanel extends StatelessWidget {
     ];
     return Container(
       color: AppColors.sidebar,
-      padding: EdgeInsets.fromLTRB(compact ? 22 : 56, compact ? 24 + MediaQuery.paddingOf(context).top : 48, compact ? 22 : 56, compact ? 22 : 40),
+      padding: EdgeInsets.fromLTRB(compact ? 22 : 56, compact ? 24 : 48, compact ? 22 : 56, compact ? 22 : 40),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           ClipOval(child: Image.asset('assets/images/logo_mark.png', width: 44, height: 44)),
