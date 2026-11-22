@@ -23,6 +23,8 @@ login / upload-pdf / cardio-* endpoints) keep working unchanged.
 
 ## Install (10 minutes)
 
+> Step-by-step guide with checks, troubleshooting and rollback: **`HANDOVER.md`**.
+
 1. Copy the new files into the Laravel project (same paths):
 
    ```
