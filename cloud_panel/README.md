@@ -126,5 +126,8 @@ cannot be mixed, so this app (like the mobile app) uses the SDK library and
   bullets); admin creates a client with a device; duplicate email shows the
   server error under the field; admin adds a device; export downloads a zip;
   client adds a staff member.
-- Not run here: on a physical Android or iOS device, and against the
-  production server.
+- `flutter build apk --release` succeeds (app id `com.drcardio.cloudpanel`).
+  It is signed with Flutter's default debug key — add your own keystore in
+  `android/app/build.gradle.kts` before publishing to the Play Store.
+- Not run here: on a physical Android or iOS device, an iOS build (needs a
+  Mac with Xcode), and against the production server.
