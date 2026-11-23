@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../constants/api_constants.dart';
+import '../demo/demo_api.dart';
+import '../demo/demo_mode.dart';
 import '../services/storage_service.dart';
 import 'api_exception.dart';
 
@@ -38,6 +40,24 @@ class DioClient {
         },
       ),
     );
+    // Demo build: nothing goes to the network; DemoApi answers every call.
+    if (kDemoMode) {
+      _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
+        final r = await DemoApi.instance.handle(options);
+        final response = Response<dynamic>(
+          requestOptions: options,
+          statusCode: r.status,
+          data: r.data,
+          headers: Headers.fromMap(r.headers),
+        );
+        if (r.status < 400) {
+          handler.resolve(response, true);
+          return;
+        }
+        if (r.status == 401 && !options.path.endsWith(ApiConstants.login)) onUnauthorized?.call();
+        handler.reject(DioException.badResponse(statusCode: r.status, requestOptions: options, response: response), true);
+      }));
+    }
     if (kDebugMode) {
       _dio.interceptors.add(LogInterceptor(requestBody: false, responseBody: false, logPrint: (o) => debugPrint('[api] $o')));
     }

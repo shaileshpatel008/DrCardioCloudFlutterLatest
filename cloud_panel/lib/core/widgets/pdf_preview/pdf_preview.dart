@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_styles.dart';
+import '../../demo/demo_documents.dart';
 import '../../utils/link_opener.dart';
 import '../ui_kit.dart';
 import 'pdf_frame_io.dart' if (dart.library.js_interop) 'pdf_frame_web.dart' as frame;
@@ -25,6 +26,7 @@ class PdfPreview extends StatelessWidget {
         child: Text('This document is not available yet.', style: AppTextStyles.muted),
       );
     }
+    if (DemoDocuments.handles(url)) return DemoDocuments.inline(url!, height: height);
     if (frame.supportsInlinePdf) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),

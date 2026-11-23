@@ -75,6 +75,41 @@ flutter build apk --release
 flutter build ipa --release
 ```
 
+## Demo build (clickable prototype, no server needed)
+
+For client presentations, the same app can run on built-in sample data:
+
+```bash
+flutter build apk --release --dart-define=DEMO_MODE=true
+```
+
+```bash
+flutter build web --release --dart-define=DEMO_MODE=true
+```
+
+- **No request leaves the device.** `lib/core/demo/` answers every Panel API v2
+  call (same paths, filters, paging and JSON shapes) from
+  `assets/demo/demo_data.json`: 8 hospitals, 5 cardiologists, an OEM partner,
+  staff, devices and 162 ECGs over 30 days, all fictional (`*@example.com`).
+- **The sign-in screen offers one-tap demo roles** (Super Admin, OEM partner,
+  Hospital / clinic, Cardiologist); any password works. A "DEMO" badge shows
+  in the top bar.
+- **Everything is clickable, including saving.** Publish a report, add
+  clients, staff, devices, cardiologists and OEM users, re-assign or delete
+  ECGs, and export (real zip of ECG PDFs / CSVs, counts CSV). Changes live in
+  memory and reset when the app restarts. A report published as the
+  cardiologist shows up for the admin and the hospital in the same session.
+- **ECG recordings and reports are drawn on the device:** a 12-lead sheet, plus
+  a report page built from the cardiologist's values. The ECG opens full
+  screen in landscape on phones.
+- **The demo APK installs next to the live app** as "Dr. Cardio Demo"
+  (`com.drcardio.cloudpanel.demo`).
+- **The demo web build uses `/#/` URLs,** so it can be uploaded to any static
+  host as-is.
+
+Without `DEMO_MODE` none of this is active and the app talks to the real API.
+`tool/demo_data/` regenerates the sample data from a local copy of the backend.
+
 ## Folder structure
 
 Same layout as the mobile app (`lib/{core,data,modules,routes,theme}`, one
@@ -116,7 +151,7 @@ cannot be mixed, so this app (like the mobile app) uses the SDK library and
 
 ## Verified in this session
 
-- `flutter analyze` — no issues; `flutter test` — passes.
+- `flutter analyze` — no issues; `flutter test` — passes (incl. the demo API tests).
 - Web release build driven in Chromium against a local copy of the Laravel
   backend with the API patch, signing in through the real login form as each
   of the four roles: every screen opened at 1440 px and 390 px with no console

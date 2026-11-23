@@ -1,5 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 
+import '../demo/demo_documents.dart';
 import '../widgets/app_toast.dart';
 
 /// Opens report PDFs and contact links: a new browser tab on web, the
@@ -10,6 +11,10 @@ class LinkOpener {
   static Future<void> open(String? url) async {
     if (url == null || url.isEmpty) {
       AppToast.error('This file is not available yet.');
+      return;
+    }
+    if (DemoDocuments.handles(url)) {
+      DemoDocuments.open(url);
       return;
     }
     final uri = Uri.tryParse(url);

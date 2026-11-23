@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/api_constants.dart';
+import '../../../core/demo/demo_mode.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/link_opener.dart';
 import '../../../core/utils/navigation.dart';
@@ -154,6 +155,10 @@ class _LoginForm extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Sign in to start your session.', style: AppTextStyles.body(size: 15, color: AppColors.muted)),
             const SizedBox(height: 28),
+            if (kDemoMode) ...[
+              _DemoAccounts(onPick: controller.demoSignIn),
+              const SizedBox(height: 24),
+            ],
             Obx(() => AppTextField(
                   label: 'Email',
                   controller: controller.email,
@@ -326,5 +331,70 @@ class _ContactTile extends StatelessWidget {
         ]),
       ),
     );
+  }
+}
+
+/// Demo build only: one tap signs in as each role (any password works).
+class _DemoAccounts extends StatelessWidget {
+  const _DemoAccounts({required this.onPick});
+  final void Function(DemoAccount account) onPick;
+
+  static const _icons = {
+    'admin': Icons.admin_panel_settings_outlined,
+    'oem': Icons.handshake_outlined,
+    'client': Icons.local_hospital_outlined,
+    'cardio': Icons.monitor_heart_outlined,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.brandTint,
+        border: Border.all(color: const Color(0xFFF6D5CF)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: AppColors.brand, borderRadius: BorderRadius.circular(6)),
+            child: Text('DEMO', style: AppTextStyles.body(size: 11, weight: FontWeight.w800, color: Colors.white).copyWith(letterSpacing: 1)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Tap a role to explore with sample data', style: AppTextStyles.body(size: 13.5, weight: FontWeight.w600, color: AppColors.ink2))),
+        ]),
+        const SizedBox(height: 12),
+        LayoutBuilder(builder: (context, box) {
+          final w = (box.maxWidth - 10) / 2;
+          return Wrap(spacing: 10, runSpacing: 10, children: [
+            for (final a in DemoAccount.all)
+              SizedBox(
+                width: w,
+                child: Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => onPick(a),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(border: Border.all(color: AppColors.line), borderRadius: BorderRadius.circular(12)),
+                      child: Row(children: [
+                        Icon(_icons[a.role], size: 20, color: AppColors.brand),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(a.label, style: AppTextStyles.body(size: 13.5, weight: FontWeight.w600))),
+                      ]),
+                    ),
+                  ),
+                ),
+              ),
+          ]);
+        }),
+        const SizedBox(height: 10),
+        Text('Nothing here is saved to a server. Changes reset when the app restarts.', style: AppTextStyles.caption),
+      ]),
+    ).animate().fadeIn(duration: 400.ms, delay: 250.ms);
   }
 }

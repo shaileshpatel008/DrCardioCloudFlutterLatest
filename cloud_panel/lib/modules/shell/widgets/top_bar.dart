@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/demo/demo_mode.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/ui_kit.dart';
@@ -44,6 +45,17 @@ class TopBar extends StatelessWidget {
               child: Obx(() => (auth.user.value?.can('ecg_records') ?? false) ? const _GlobalSearch() : const SizedBox.shrink()),
             ),
           ),
+        if (kDemoMode) ...[
+          Tooltip(
+            message: 'Sample data. Changes reset when the app restarts.',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(color: AppColors.brandTint, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFF6D5CF))),
+              child: Text('DEMO', style: AppTextStyles.body(size: 11, weight: FontWeight.w800, color: AppColors.brand).copyWith(letterSpacing: 1)),
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
         Obx(() {
           final unread = shell.unread.value;
           return Tooltip(

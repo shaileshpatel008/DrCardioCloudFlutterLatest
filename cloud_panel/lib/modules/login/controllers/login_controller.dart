@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../../core/demo/demo_mode.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/storage_service.dart';
@@ -35,6 +36,13 @@ class LoginController extends GetxController {
     } finally {
       loading.value = false;
     }
+  }
+
+  /// Demo build: fill in a sample account and sign in.
+  void demoSignIn(DemoAccount account) {
+    email.text = account.email;
+    password.text = DemoAccount.password;
+    submit();
   }
 
   Future<String> sendReset(String address) => AuthRepository().forgotPassword(address);

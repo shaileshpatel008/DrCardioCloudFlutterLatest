@@ -5,6 +5,8 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:get/get.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/demo/demo_mode.dart';
+import 'core/demo/demo_store.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/storage_service.dart';
 import 'modules/shell/shell_controller.dart';
@@ -14,10 +16,16 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Clean URLs on web (/clients instead of /#/clients).
-  if (kIsWeb) usePathUrlStrategy();
+  // Clean URLs on web (/clients instead of /#/clients). The demo build keeps
+  // /#/ URLs so it can be uploaded to any static host without rewrite rules.
+  if (kIsWeb && !kDemoMode) usePathUrlStrategy();
 
   await StorageService.instance.init();
+  if (kDemoMode) {
+    await DemoStore.instance.load();
+    // A session saved by the live app can't be used in the demo.
+    if (!StorageService.instance.token.startsWith('demo-')) await StorageService.instance.clearSession();
+  }
   final auth = Get.put(AuthService().init(), permanent: true);
   Get.put(ShellController(), permanent: true);
 

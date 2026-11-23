@@ -2,7 +2,7 @@
     <!-- The panel talks to the ECG Cloud API and opens report PDFs. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Dr. Cardio Cloud"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
