@@ -15,11 +15,9 @@ import 'parse_data.dart';
 /// channel samples and runs baseline-capture -> DC-correction -> FIR
 /// filter -> high-pass filter -> down-sample, same order as the original.
 ///
-/// Two things this port deliberately does differently, both because the
-/// original ran into real bugs from them (confirmed by this repo's own
+/// One thing this port deliberately does differently, because the
+/// original ran into a real bug from it (confirmed by this repo's own
 /// later fixes to the same file):
-///  - The elapsed-seconds tick used `x % sampleRatePerSec == 500`, which
-///    can never be true — ported here as `== 0` so it actually fires.
 ///  - The original mutated MPAndroidChart's `LineData` directly from this
 ///    background-thread-equivalent, which is exactly what caused a real
 ///    `NegativeArraySizeException` once throughput increased (their fix:
@@ -45,9 +43,6 @@ class EcgEngine {
   void resetHeartRate() => _heartRate.reset();
 
   final LeadStatusDebouncer _leadStatusDebouncer = LeadStatusDebouncer();
-
-  final StreamController<int> _secondTickController = StreamController<int>.broadcast();
-  Stream<int> get onSecondTick => _secondTickController.stream;
 
   void _handlePacket(EcgFramePacket packet) {
     if (!packet.isValid) return;
@@ -114,10 +109,6 @@ class EcgEngine {
       _prepareEntryPerChannel(chi, x, currVal);
     }
 
-    if (x % ecg.sampleRatePerSec == 0 && x > 0) {
-      _secondTickController.add(x ~/ ecg.sampleRatePerSec);
-    }
-
     if (ecg.rawDataCount % ecg.downSamplingRate == 0) {
       ecg.displayDataCount++;
     }
@@ -143,7 +134,6 @@ class EcgEngine {
 
   void dispose() {
     _sub.cancel();
-    _secondTickController.close();
     revision.dispose();
     _heartRate.dispose();
   }

@@ -553,10 +553,10 @@ class _RecordingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      // recordedSeconds itself isn't Rx (it's derived from a plain
-      // EcgData field) — reading elapsedSeconds here just gives this Obx
-      // a once-a-second Rx tick to rebuild on while recording, so the
-      // ring animates continuously instead of only jumping at Start/Stop.
+      // recordedSeconds itself isn't Rx (it's read from a Stopwatch) —
+      // reading elapsedSeconds here just gives this Obx a once-a-second
+      // Rx tick to rebuild on while recording, so the ring animates
+      // continuously instead of only jumping at Start/Stop.
       controller.elapsedSeconds.value;
       final remaining = (1 - controller.recordedSeconds / LiveEcgController.minRecordingSeconds).clamp(0.0, 1.0);
       final reachedMinimum = controller.recordedSeconds >= LiveEcgController.minRecordingSeconds;
@@ -623,7 +623,8 @@ class _StoppedState extends StatelessWidget {
     return Obx(() {
       final ready = controller.canSave;
       final saving = controller.isSaving.value;
-      final tint = ready ? _kReadyGreen : AppColors.brandRed;
+      final blockedReason = controller.saveBlockedReason;
+      final tint = blockedReason == null ? _kReadyGreen : AppColors.brandRed;
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -634,13 +635,11 @@ class _StoppedState extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(ready ? Icons.check_circle_outline : Icons.warning_amber_rounded, color: tint, size: 16),
+                Icon(blockedReason == null ? Icons.check_circle_outline : Icons.warning_amber_rounded, color: tint, size: 16),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    ready
-                        ? 'Recording captured - tap Save to generate the report'
-                        : 'Recording too short - needs at least ${LiveEcgController.minRecordingSeconds}s',
+                    blockedReason ?? 'Recording captured - tap Save to generate the report',
                     style: TextStyle(color: tint, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),

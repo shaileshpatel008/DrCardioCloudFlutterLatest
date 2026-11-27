@@ -40,7 +40,11 @@ class LiveEcgController extends GetxController {
   /// option can replace it mid-visit — a fresh recording never changes it
   /// after `onInit`, so this is a no-op extra layer for that flow.
   late final Rx<PatientModel> patient;
-  StreamSubscription<int>? _secondsSub;
+
+  /// Real time spent recording, cumulative across Start/Stop attempts.
+  final Stopwatch _recordingClock = Stopwatch();
+  DateTime? _attemptStartedAt;
+  Timer? _clockTicker;
 
   /// Set when this screen was opened from Load Data (Get.arguments is the
   /// saved [EcgRecordModel] instead of a bare [PatientModel]) — port of
@@ -82,22 +86,37 @@ class LiveEcgController extends GetxController {
   /// than [LeadPlacementChecker.minBeats] needs even at a slow heart rate.
   static const _placementCheckWindowSamples = 400;
 
-  /// Total ECG actually captured this screen visit, in seconds —
-  /// cumulative across separate Start/Stop attempts (a Stop before 20s
-  /// followed by another Start keeps counting rather than resetting),
-  /// matching the original's own `rawDataCount / sampleRatePerSec` check,
-  /// which never resets on a fresh Start either. [elapsedSeconds] resets
-  /// every Start on purpose — it's "how long has this attempt run", a
-  /// different, purely cosmetic number shown in the header timer chip.
-  int get recordedSeconds => EcgData.instance.rawDataCount ~/ EcgData.instance.sampleRatePerSec;
+  /// Real seconds spent recording this screen visit, cumulative across
+  /// Start/Stop attempts. Deliberately wall-clock, not the original's
+  /// `rawDataCount / sampleRatePerSec`: that sample count skips the first
+  /// 3s (DC-baseline capture) and every packet dropped on a weak Bluetooth
+  /// link, so a real 30s recording could still count as under 20s and be
+  /// flagged "too short". Whether enough data actually arrived is checked
+  /// separately by [hasEnoughData]. [elapsedSeconds] (header chip) is the
+  /// current attempt only.
+  int get recordedSeconds => _recordingClock.elapsed.inSeconds;
+
+  /// Whether enough raw samples arrived for the report's measurements.
+  bool get hasEnoughData => EcgData.instance.rawDataCount >= EcgAnalysisService.minSamplesForReport;
+
+  /// Why Save isn't available yet for a live recording, or null if it is.
+  static String? saveBlockedReasonFor({required int recordedSeconds, required int rawSamples}) {
+    if (recordedSeconds < minRecordingSeconds) return 'Recording too short - needs at least ${minRecordingSeconds}s';
+    if (rawSamples < EcgAnalysisService.minSamplesForReport) {
+      return 'Not enough ECG data received - check the device connection and record again';
+    }
+    return null;
+  }
+
+  String? get saveBlockedReason => saveBlockedReasonFor(recordedSeconds: recordedSeconds, rawSamples: EcgData.instance.rawDataCount);
 
   /// Loaded data has no `rawDataCount` of its own (it's already-filtered
   /// samples, not a raw stream) and no minimum-duration gate to satisfy —
   /// the record was already long enough to have been saved once.
-  bool get canSave => isLoadedMode ? !isSaving.value : (!isReading.value && !isSaving.value && recordedSeconds >= minRecordingSeconds);
+  bool get canSave => isLoadedMode ? !isSaving.value : (!isReading.value && !isSaving.value && saveBlockedReason == null);
 
-  /// 0 once [canSave] is true; counts down the seconds still needed so the
-  /// Save button's progress ring has something to animate toward.
+  /// 0 once the minimum duration is reached; counts down the seconds still
+  /// needed so the Save button's progress ring has something to animate toward.
   int get secondsUntilSaveReady => (minRecordingSeconds - recordedSeconds).clamp(0, minRecordingSeconds);
 
   /// Port of `settings.test_mode`: true acquires the device's built-in
@@ -112,7 +131,6 @@ class LiveEcgController extends GetxController {
     super.onInit();
     final args = Get.arguments;
     engine = EcgEngine(bluetoothService);
-    _secondsSub = engine.onSecondTick.listen((s) => elapsedSeconds.value = s);
 
     final storage = StorageService.instance;
     isTestMode = storage.testMode;
@@ -240,6 +258,12 @@ class LiveEcgController extends GetxController {
       AppToast.error('Error communicating to the device. Please go back and connect again.', title: 'Not Connected');
       return;
     }
+    _attemptStartedAt = DateTime.now();
+    _recordingClock.start();
+    _clockTicker?.cancel();
+    _clockTicker = Timer.periodic(const Duration(milliseconds: 250), (_) {
+      elapsedSeconds.value = DateTime.now().difference(_attemptStartedAt!).inSeconds;
+    });
     // Test Mode's fixed calibration waveform has no real electrodes to
     // check placement on — same condition the lead-off banner already
     // uses.
@@ -254,8 +278,22 @@ class LiveEcgController extends GetxController {
     isReading.value = false;
     _placementCheckTimer?.cancel();
     _placementCheckTimer = null;
-    if (!canSave) {
+    _recordingClock.stop();
+    _clockTicker?.cancel();
+    _clockTicker = null;
+    final ecg = EcgData.instance;
+    AppLogger.i('Recording stopped: ${recordedSeconds}s real time, '
+        '${ecg.rawDataCount} samples (${ecg.rawDataCount ~/ ecg.sampleRatePerSec}s at ${ecg.sampleRatePerSec}Hz)');
+    _warnIfCannotSave();
+  }
+
+  void _warnIfCannotSave() {
+    final reason = saveBlockedReason;
+    if (reason == null) return;
+    if (recordedSeconds < minRecordingSeconds) {
       AppToast.warning('Need to acquire for at least $minRecordingSeconds seconds.', title: 'Recording too short');
+    } else {
+      AppToast.warning('$reason.', title: 'Not enough data');
     }
   }
 
@@ -307,7 +345,7 @@ class LiveEcgController extends GetxController {
       if (isReading.value) {
         AppToast.warning('Stop the recording before you can save the report.', title: 'Still Recording');
       } else if (!isSaving.value) {
-        AppToast.warning('Need to acquire for at least $minRecordingSeconds seconds.', title: 'Recording too short');
+        _warnIfCannotSave();
       }
       return;
     }
@@ -461,7 +499,7 @@ class LiveEcgController extends GetxController {
       EcgData.instance.isReading = false;
     }
     _placementCheckTimer?.cancel();
-    _secondsSub?.cancel();
+    _clockTicker?.cancel();
     engine.dispose();
     super.onClose();
   }

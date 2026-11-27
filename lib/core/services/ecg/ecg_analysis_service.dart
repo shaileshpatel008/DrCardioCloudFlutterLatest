@@ -78,6 +78,10 @@ class EcgAnalysisService {
   static const double _scaleFactorForData = 20;
   static const int _reportDataLength = 6500;
 
+  /// Fewest raw samples [analyze] can measure from — below this the
+  /// report's measurement fields come out blank.
+  static const int minSamplesForReport = _reportDataLength;
+
   /// Port of `NewEcgActivity.generateReport()`'s `new
   /// ECGAnalysis(ecgData.filtered_data, pos, gain).analyse()` (with
   /// `pos` fixed at 0 — the original's seek-bar-driven analysis window
