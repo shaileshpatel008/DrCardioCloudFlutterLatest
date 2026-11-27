@@ -30,6 +30,7 @@ class ClassicReportBuilder {
     List<String> reportTypes,
     pw.MemoryImage? photoImage,
     pw.MemoryImage? signatureImage,
+    pw.MemoryImage? logoImage,
   ) {
     doc.addPage(
       pw.MultiPage(
@@ -38,7 +39,7 @@ class ClassicReportBuilder {
         build: (context) => [
           for (var i = 0; i < reportTypes.length; i++) ...[
             if (i > 0) pw.NewPage(),
-            _buildLetterhead(storage, record),
+            _buildLetterhead(storage, record, logoImage),
             pw.SizedBox(height: 8),
             _buildInfoBox(record, signatureImage),
             ..._buildWarningBanner(record),
@@ -52,20 +53,22 @@ class ClassicReportBuilder {
     );
   }
 
-  static pw.Widget _buildLetterhead(StorageService storage, EcgRecordModel record) {
+  static pw.Widget _buildLetterhead(StorageService storage, EcgRecordModel record, pw.MemoryImage? logoImage) {
     final doctorLine = [storage.doctorName, storage.doctorContactNo, storage.doctorAddress].where((s) => s.isNotEmpty).join('   |   ');
     return pw.Column(
       children: [
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.Container(width: 30, height: 30, decoration: pw.BoxDecoration(color: _blue, shape: pw.BoxShape.circle)),
-            pw.SizedBox(width: 10),
+            if (logoImage != null)
+              pw.Image(logoImage, height: 30)
+            else
+              pw.Text('Dr. Cardio', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _blue)),
+            pw.SizedBox(width: 12),
             pw.Expanded(
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Dr. Cardio', style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _blue)),
                   pw.Text(
                     doctorLine.isEmpty ? (storage.clinicName.isEmpty ? 'ECG in your pocket' : storage.clinicName) : doctorLine,
                     style: pw.TextStyle(fontSize: 8, color: PdfReportShared.mutedColor),

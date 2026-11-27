@@ -47,39 +47,9 @@ class SplashView extends GetView<SplashController> {
             child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 128,
-                height: 128,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: AppColors.ink.withValues(alpha: 0.10), blurRadius: 40, offset: const Offset(0, 16))],
-                ),
-                // The app's own launcher icon (the outline heart+ECG ring
-                // a user already recognizes from their home screen)
-                // instead of the solid-filled logoMark — lifted onto this
-                // white disc rather than reusing the launcher's own white
-                // background square.
-                padding: const EdgeInsets.all(22),
-                child: Image.asset(AppAssets.logoLauncherMark, fit: BoxFit.contain),
-              ),
-              const SizedBox(height: 26),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
-                  children: [
-                    TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
-                    TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
+              Image.asset(AppAssets.logoFull, width: 260, fit: BoxFit.contain),
+              const SizedBox(height: 14),
               const SizedBox(width: 120, height: 20, child: CustomPaint(painter: _EcgSquigglePainter())),
-              const SizedBox(height: 10),
-              const Text(
-                'ECG IN YOUR POCKET',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted2, letterSpacing: 2.2),
-              ),
               const SizedBox(height: 44),
               const SizedBox(
                 width: 26,

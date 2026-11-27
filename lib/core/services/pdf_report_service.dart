@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../data/models/ecg_record_model.dart';
+import '../constants/app_assets.dart';
 import 'dr_cardio_storage.dart';
 import 'pdf/classic_report_builder.dart';
 // Play Store release: the other 3 formats are unused while generation is
@@ -49,12 +51,13 @@ class PdfReportService {
     // not an empty box.
     final photoImage = await PdfReportShared.loadImage(record.patient.photoPath);
     final signatureImage = await PdfReportShared.loadImage(record.patient.signaturePath);
+    final logoImage = pw.MemoryImage((await rootBundle.load(AppAssets.logoFull)).buffer.asUint8List());
 
     // Play Store release: always Classic. Restore this dynamic dispatch
     // (and the `format` line above) when the other formats are ready:
     // switch (format) {
     //   case ReportFormat.classic:
-    //     ClassicReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage);
+    //     ClassicReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage, logoImage);
     //   case ReportFormat.modernClean:
     //     ModernCleanReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage);
     //   case ReportFormat.modernCompact:
@@ -62,7 +65,7 @@ class PdfReportService {
     //   case ReportFormat.modernDashboard:
     //     ModernDashboardReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage);
     // }
-    ClassicReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage);
+    ClassicReportBuilder.addPages(doc, record, storage, reportTypes, photoImage, signatureImage, logoImage);
 
     final dir = await DrCardioStorage.reportsDir();
     final file = File(p.join(dir.path, '${RecordFileNaming.stem(record)}.pdf'));
