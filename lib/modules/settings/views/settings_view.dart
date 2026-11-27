@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/services/pdf/report_format.dart';
+// Only used by the report-format picker, hidden below for the Play Store
+// release — uncomment together with that block.
+// import '../../../core/services/pdf/report_format.dart';
 import '../../../routes/app_routes.dart';
 import '../../../theme/app_colors.dart';
 import '../controllers/settings_controller.dart';
@@ -108,15 +110,18 @@ class SettingsView extends GetView<SettingsController> {
                 options: SettingsController.longLeadOptions,
                 onChanged: controller.setLongLead,
               )),
-          const Divider(height: 1),
-          _ReportFormatRow(controller: controller),
+          // Hidden for the Play Store release: report format is pinned to
+          // Classic for now (see PdfReportService.generate) and the other
+          // layouts aren't ready yet. Uncomment to restore the picker.
+          // const Divider(height: 1),
+          // _ReportFormatRow(controller: controller),
         ]),
         const Padding(
           padding: EdgeInsets.fromLTRB(4, 6, 4, 0),
           child: Text(
             'Report type controls the PDF\'s lead layout — one page is generated per selected type. '
-            'Long lead is which lead the full-width rhythm strip at the bottom plots. '
-            'Report format is the overall look of the PDF — applies to every report generated from now on.',
+            'Long lead is which lead the full-width rhythm strip at the bottom plots.',
+            // 'Report format is the overall look of the PDF — applies to every report generated from now on.',
             style: TextStyle(fontSize: 11.5, color: AppColors.muted, fontWeight: FontWeight.w500, height: 1.4),
           ),
         ),
@@ -282,6 +287,11 @@ class _ReportTypeRow extends StatelessWidget {
   }
 }
 
+// Hidden for the Play Store release — see the commented-out
+// `_ReportFormatRow(controller: controller)` call above. Kept whole (not
+// deleted) so it can be restored verbatim by removing this `/*`/`*/` pair
+// once the other report formats are ready.
+/*
 /// Port of the client-approved mockup's Settings row + picker flow — opens
 /// a bottom sheet with one card per [ReportFormat], each carrying a small
 /// schematic preview so the choice doesn't rely on name alone. Single-
@@ -462,6 +472,7 @@ class _FormatThumbnail extends StatelessWidget {
     );
   }
 }
+*/
 
 class _IconChip extends StatelessWidget {
   const _IconChip(this.icon);
