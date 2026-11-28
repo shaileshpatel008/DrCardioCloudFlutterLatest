@@ -62,31 +62,9 @@ class LoginView extends GetView<LoginController> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 30),
-                        Row(
-                          children: [
-                            Container(
-                              width: 46,
-                              height: 46,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: AppColors.brandRed.withValues(alpha: 0.28), blurRadius: 16, offset: const Offset(0, 6))],
-                              ),
-                              // Original app icon (its red disc is baked into the
-                              // asset) rather than a re-tinted glyph in a custom
-                              // colored chip — just lifted with a soft shadow.
-                              child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
-                            ),
-                            const SizedBox(width: 12),
-                            RichText(
-                              text: const TextSpan(
-                                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                                children: [
-                                  TextSpan(text: 'Dr. ', style: TextStyle(color: AppColors.ink)),
-                                  TextSpan(text: 'Cardio', style: TextStyle(color: AppColors.brandRed)),
-                                ],
-                              ),
-                            ),
-                          ],
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Image.asset(AppAssets.logoFull, height: 56, fit: BoxFit.contain),
                         ),
                         const SizedBox(height: 40),
                         Text('Welcome back', style: Theme.of(context).textTheme.headlineMedium),
